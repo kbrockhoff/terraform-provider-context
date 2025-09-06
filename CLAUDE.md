@@ -12,71 +12,87 @@ This Terraform provider replicates the functionality of the `kbrockhoff/terrafor
 
 ### Provider Configuration
 
-The provider should accept the following configuration attributes:
+The provider should accept only the following configuration attributes for global cloud-specific settings:
 
-#### Core Configuration
 - `cloud_provider` (string, optional) - Cloud provider identifier: `dc`, `aws`, `az`, `gcp`, `oci`, `ibm`, `do`, `vul`, `ali`, `cv`
 - `tag_prefix` (string, optional, default: "bc-") - Prefix for all generated tags
 
-#### Naming Configuration
+## Data Source Requirements
+
+### Context Data Source
+
+The `context` data source contains all configuration fields and provides the computed outputs:
+
+```hcl
+provider "brockhoff" {
+  cloud_provider = "aws"
+  tag_prefix     = "bc-"
+}
+
+data "brockhoff_context" "main" {
+  # Naming Configuration
+  namespace       = "myorg"
+  name            = "myapp"
+  environment     = "prod"
+  environment_name = "Production"
+  environment_type = "Production"
+  
+  # Resource Management
+  enabled        = true
+  availability   = "preemptable"
+  managedby      = "terraform"
+  deletion_date  = "2024-12-31"
+  
+  # ... other attributes
+}
+```
+
+#### Data Source Configuration Attributes
+
+##### Naming Configuration
 - `namespace` (string, optional) - Organization or business unit identifier (1-8 chars, lowercase alphanumeric with hyphens)
 - `name` (string, optional) - Unique resource name (combined name_prefix must be 2-24 chars)
 - `environment` (string, optional) - Environment abbreviation (1-8 chars, lowercase alphanumeric with hyphens)
 - `environment_name` (string, optional) - Full environment name
 - `environment_type` (string, optional) - One of: None, Ephemeral, Development, Testing, UAT, Production, MissionCritical
 
-#### Resource Management
+##### Resource Management
 - `enabled` (bool, optional, default: true) - Enable/disable resource creation
 - `availability` (string, optional, default: "preemptable") - Availability requirement from predefined list
 - `managedby` (string, optional, default: "terraform") - Management platform identifier
 - `deletion_date` (string, optional) - Resource deletion date (YYYY-MM-DD format)
 
-#### Project Management Integration
+##### Project Management Integration
 - `pm_platform` (string, optional) - Project management platform (e.g., JIRA, SNOW)
 - `pm_project_code` (string, optional) - Project code/prefix
 
-#### ITSM Integration
+##### ITSM Integration
 - `itsm_platform` (string, optional) - IT Service Management platform
 - `itsm_system_id` (string, optional) - ITSM system identifier
 - `itsm_component_id` (string, optional) - ITSM component identifier
 - `itsm_instance_id` (string, optional) - ITSM instance identifier
 
-#### Ownership and Billing
+##### Ownership and Billing
 - `cost_center` (string, optional) - Cost center for billing
 - `product_owners` (list(string), optional) - Product owner email addresses
 - `code_owners` (list(string), optional) - Code owner email addresses
 - `data_owners` (list(string), optional) - Data owner email addresses
 
-#### Data Classification
+##### Data Classification
 - `sensitivity` (string, optional, default: "confidential") - Data sensitivity level from predefined list
 - `data_regs` (list(string), optional) - Data compliance regulations
 - `security_review` (string, optional) - Security review identifier/date
 - `privacy_review` (string, optional) - Privacy review identifier/date
 
-#### Feature Toggles
+##### Feature Toggles
 - `source_repo_tags_enabled` (bool, optional, default: true) - Include git repository tags
 - `system_prefixes_enabled` (bool, optional, default: true) - Add platform prefixes to system IDs
 - `not_applicable_enabled` (bool, optional, default: true) - Include N/A tags for null values
 - `owner_tags_enabled` (bool, optional, default: true) - Include owner tags
 
-#### Additional Tags
+##### Additional Tags
 - `additional_tags` (map(string), optional) - Custom tags to merge
 - `additional_data_tags` (map(string), optional) - Custom data-specific tags to merge
-
-## Data Source Requirements
-
-### Context Data Source
-
-The provider should include a `context` data source that provides the computed outputs:
-
-```hcl
-data "brockhoff_context" "main" {
-  namespace    = "myorg"
-  name         = "myapp"
-  environment  = "prod"
-  # ... other attributes
-}
-```
 
 ## Computed Attributes
 
