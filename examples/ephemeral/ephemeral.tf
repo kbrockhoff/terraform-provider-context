@@ -31,7 +31,7 @@ output "ephemeral_name" {
 
 output "ephemeral_deletion_date" {
   description = "Auto-calculated deletion date (90 days from now)"
-  value       = lookup(data.brockhoff_context.ephemeral.tags, "bc-DeletionDate", "not set")
+  value       = lookup(data.brockhoff_context.ephemeral.tags, "bc-deletiondate", "not set")
 }
 
 output "ephemeral_tags" {

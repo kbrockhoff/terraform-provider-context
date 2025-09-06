@@ -8,7 +8,8 @@
       "mcp__filesystem__create_directory",
       "mcp__filesystem__move_file",
       "mcp__filesystem__list_directory",
-      "Bash(make test:*)"
+      "Bash(make test:*)",
+      "Bash(TF_CLI_CONFIG_FILE=\"../.terraformrc\" terraform plan)"
     ]
   },
   "enableAllProjectMcpServers": true,

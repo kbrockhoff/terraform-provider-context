@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"time"
@@ -67,72 +68,70 @@ func (tp *TagProcessor) Process() (map[string]string, error) {
 	naValue := tp.CloudProvider.GetNAValue()
 
 	// Environment and resource tags
-	tp.addTag(tags, "Environment", tp.Config.Environment, naValue)
-	tp.addTag(tags, "EnvironmentName", tp.Config.EnvironmentName, naValue)
-	tp.addTag(tags, "EnvironmentType", tp.Config.EnvironmentType, naValue)
-	tp.addTag(tags, "Availability", tp.Config.Availability, naValue)
-	tp.addTag(tags, "ManagedBy", tp.Config.ManagedBy, naValue)
-	tp.addTag(tags, "DeletionDate", tp.Config.DeletionDate, naValue)
+	tp.addTag(tags, "environment", tp.Config.EnvironmentName, naValue)
+	// Note: tp.Config.Environment is used for name prefix generation
+	// Note: environmenttype is kept as input for calculations but not included in output tags
+	tp.addTag(tags, "availability", tp.Config.Availability, naValue)
+	tp.addTag(tags, "managedby", tp.Config.ManagedBy, naValue)
+	tp.addTag(tags, "deletiondate", tp.Config.DeletionDate, naValue)
 
 	// Billing
-	tp.addTag(tags, "CostCenter", tp.Config.CostCenter, naValue)
+	tp.addTag(tags, "costcenter", tp.Config.CostCenter, naValue)
 
 	// Project Management
 	if tp.Config.SystemPrefixesEnabled && tp.Config.PMPlatform != "" && tp.Config.PMProjectCode != "" {
-		tags["PMProject"] = fmt.Sprintf("%s%s%s", tp.Config.PMPlatform, delimiter, tp.Config.PMProjectCode)
+		tags["projectmgmtid"] = fmt.Sprintf("%s%s%s", tp.Config.PMPlatform, delimiter, tp.Config.PMProjectCode)
 	} else {
-		tp.addTag(tags, "PMProject", tp.Config.PMProjectCode, naValue)
+		tp.addTag(tags, "projectmgmtid", tp.Config.PMProjectCode, naValue)
 	}
 
 	// ITSM
 	if tp.Config.SystemPrefixesEnabled && tp.Config.ITSMPlatform != "" {
 		if tp.Config.ITSMSystemID != "" {
-			tags["ITSMSystem"] = fmt.Sprintf("%s%s%s", tp.Config.ITSMPlatform, delimiter, tp.Config.ITSMSystemID)
+			tags["systemid"] = fmt.Sprintf("%s%s%s", tp.Config.ITSMPlatform, delimiter, tp.Config.ITSMSystemID)
 		}
 		if tp.Config.ITSMComponentID != "" {
-			tags["ITSMComponent"] = fmt.Sprintf("%s%s%s", tp.Config.ITSMPlatform, delimiter, tp.Config.ITSMComponentID)
+			tags["componentid"] = fmt.Sprintf("%s%s%s", tp.Config.ITSMPlatform, delimiter, tp.Config.ITSMComponentID)
 		}
 		if tp.Config.ITSMInstanceID != "" {
-			tags["ITSMInstance"] = fmt.Sprintf("%s%s%s", tp.Config.ITSMPlatform, delimiter, tp.Config.ITSMInstanceID)
+			tags["instanceid"] = fmt.Sprintf("%s%s%s", tp.Config.ITSMPlatform, delimiter, tp.Config.ITSMInstanceID)
 		}
 	} else {
-		tp.addTag(tags, "ITSMSystem", tp.Config.ITSMSystemID, naValue)
-		tp.addTag(tags, "ITSMComponent", tp.Config.ITSMComponentID, naValue)
-		tp.addTag(tags, "ITSMInstance", tp.Config.ITSMInstanceID, naValue)
+		tp.addTag(tags, "systemid", tp.Config.ITSMSystemID, naValue)
+		tp.addTag(tags, "componentid", tp.Config.ITSMComponentID, naValue)
+		tp.addTag(tags, "instanceid", tp.Config.ITSMInstanceID, naValue)
 	}
 
 	// Ownership (if enabled)
 	if tp.Config.OwnerTagsEnabled {
 		if len(tp.Config.ProductOwners) > 0 {
-			tags["ProductOwners"] = strings.Join(tp.Config.ProductOwners, delimiter)
+			tags["productowners"] = strings.Join(tp.Config.ProductOwners, delimiter)
 		} else if tp.Config.NotApplicableEnabled {
-			tags["ProductOwners"] = naValue
+			tags["productowners"] = naValue
 		}
 
 		if len(tp.Config.CodeOwners) > 0 {
-			tags["CodeOwners"] = strings.Join(tp.Config.CodeOwners, delimiter)
+			tags["codeowners"] = strings.Join(tp.Config.CodeOwners, delimiter)
 		} else if tp.Config.NotApplicableEnabled {
-			tags["CodeOwners"] = naValue
+			tags["codeowners"] = naValue
 		}
 	}
 
 	// Reviews
-	tp.addTag(tags, "SecurityReview", tp.Config.SecurityReview, naValue)
-	tp.addTag(tags, "PrivacyReview", tp.Config.PrivacyReview, naValue)
+	tp.addTag(tags, "securityreview", tp.Config.SecurityReview, naValue)
+	tp.addTag(tags, "privacyreview", tp.Config.PrivacyReview, naValue)
 
 	// Git repository tags (if enabled)
 	if tp.Config.SourceRepoTagsEnabled {
 		gitInfo, err := GetGitInfo()
 		if err == nil && gitInfo != nil {
-			tp.addTag(tags, "SourceRepo", gitInfo.RepoURL, naValue)
-			tp.addTag(tags, "SourceCommit", gitInfo.CommitHash, naValue)
+			tp.addTag(tags, "sourcerepo", gitInfo.RepoURL, naValue)
+			tp.addTag(tags, "sourcecommit", gitInfo.CommitHash, naValue)
 		}
 	}
 
 	// Merge additional tags
-	for k, v := range tp.Config.AdditionalTags {
-		tags[k] = v
-	}
+	maps.Copy(tags, tp.Config.AdditionalTags)
 
 	// Apply tag prefix and sanitization
 	prefixedTags := make(map[string]string)
@@ -159,25 +158,23 @@ func (tp *TagProcessor) ProcessDataTags() (map[string]string, error) {
 	naValue := tp.CloudProvider.GetNAValue()
 
 	// Data classification
-	tp.addTag(tags, "DataSensitivity", tp.Config.Sensitivity, naValue)
+	tp.addTag(tags, "sensitivity", tp.Config.Sensitivity, naValue)
 
 	if len(tp.Config.DataRegs) > 0 {
-		tags["DataRegulations"] = strings.Join(tp.Config.DataRegs, delimiter)
+		tags["dataregulations"] = strings.Join(tp.Config.DataRegs, delimiter)
 	} else if tp.Config.NotApplicableEnabled {
-		tags["DataRegulations"] = naValue
+		tags["dataregulations"] = naValue
 	}
 
 	// Data ownership
 	if tp.Config.OwnerTagsEnabled && len(tp.Config.DataOwners) > 0 {
-		tags["DataOwners"] = strings.Join(tp.Config.DataOwners, delimiter)
+		tags["dataowners"] = strings.Join(tp.Config.DataOwners, delimiter)
 	} else if tp.Config.NotApplicableEnabled {
-		tags["DataOwners"] = naValue
+		tags["dataowners"] = naValue
 	}
 
 	// Merge additional data tags
-	for k, v := range tp.Config.AdditionalDataTags {
-		tags[k] = v
-	}
+	maps.Copy(tags, tp.Config.AdditionalDataTags)
 
 	// Apply tag prefix and sanitization
 	prefixedTags := make(map[string]string)
