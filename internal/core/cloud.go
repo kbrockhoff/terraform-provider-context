@@ -5,6 +5,18 @@ import (
 	"strings"
 )
 
+// Precompiled regular expressions
+var (
+	awsSanitizeRegex     = regexp.MustCompile(`[^a-zA-Z0-9 \\.:=+@_/-]`)
+	awsValidateKeyRegex  = regexp.MustCompile(`^[a-zA-Z0-9 +\-=._:/]+$`)
+	azureSanitizeRegex   = regexp.MustCompile(`[ <>%&\\?/#:]`)
+	azureValidateKeyRegex = regexp.MustCompile(`[<>%&\\?/]`)
+	gcpSanitizeRegex     = regexp.MustCompile(`[^a-z0-9_-]`)
+	gcpValidateKeyRegex  = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
+	defaultSanitizeRegex = regexp.MustCompile(`[<>%&\\?]`)
+	defaultValidateKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+)
+
 // CloudProvider interface defines cloud-specific tag formatting rules
 type CloudProvider interface {
 	GetMaxTagLength() int
@@ -31,14 +43,12 @@ func (p *AWSProvider) GetNAValue() string {
 
 func (p *AWSProvider) SanitizeTagValue(value string) string {
 	// Replace characters not matching /[a-zA-Z0-9 \\.:=+@_/-]/ with _
-	re := regexp.MustCompile(`[^a-zA-Z0-9 \\.:=+@_/-]`)
-	return re.ReplaceAllString(value, "_")
+	return awsSanitizeRegex.ReplaceAllString(value, "_")
 }
 
 func (p *AWSProvider) ValidateTagKey(key string) bool {
 	// AWS tag keys can contain letters, numbers, spaces, and +-=._:/
-	re := regexp.MustCompile(`^[a-zA-Z0-9 +\-=._:/]+$`)
-	return re.MatchString(key)
+	return awsValidateKeyRegex.MatchString(key)
 }
 
 // AzureProvider implements CloudProvider for Azure
@@ -58,14 +68,12 @@ func (p *AzureProvider) GetNAValue() string {
 
 func (p *AzureProvider) SanitizeTagValue(value string) string {
 	// Replace /[ <>%&\\?/#:]/ with empty string
-	re := regexp.MustCompile(`[ <>%&\\?/#:]`)
-	return re.ReplaceAllString(value, "")
+	return azureSanitizeRegex.ReplaceAllString(value, "")
 }
 
 func (p *AzureProvider) ValidateTagKey(key string) bool {
 	// Azure tag keys cannot contain <, >, %, &, \, ?, /
-	re := regexp.MustCompile(`[<>%&\\?/]`)
-	return !re.MatchString(key)
+	return !azureValidateKeyRegex.MatchString(key)
 }
 
 // GCPProvider implements CloudProvider for GCP
@@ -86,14 +94,12 @@ func (p *GCPProvider) GetNAValue() string {
 func (p *GCPProvider) SanitizeTagValue(value string) string {
 	// Convert to lowercase and replace non-alphanumeric/underscore/hyphen with hyphen
 	value = strings.ToLower(value)
-	re := regexp.MustCompile(`[^a-z0-9_-]`)
-	return re.ReplaceAllString(value, "-")
+	return gcpSanitizeRegex.ReplaceAllString(value, "-")
 }
 
 func (p *GCPProvider) ValidateTagKey(key string) bool {
 	// GCP labels must be lowercase letters, numbers, hyphens, underscores
-	re := regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
-	return re.MatchString(key)
+	return gcpValidateKeyRegex.MatchString(key)
 }
 
 // DefaultProvider implements CloudProvider for DC and other providers
@@ -113,14 +119,12 @@ func (p *DefaultProvider) GetNAValue() string {
 
 func (p *DefaultProvider) SanitizeTagValue(value string) string {
 	// Replace /[<>%&\\?]/ with _
-	re := regexp.MustCompile(`[<>%&\\?]`)
-	return re.ReplaceAllString(value, "_")
+	return defaultSanitizeRegex.ReplaceAllString(value, "_")
 }
 
 func (p *DefaultProvider) ValidateTagKey(key string) bool {
 	// Basic validation - no special characters that could cause issues
-	re := regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
-	return re.MatchString(key)
+	return defaultValidateKeyRegex.MatchString(key)
 }
 
 // GetCloudProvider returns the appropriate CloudProvider implementation

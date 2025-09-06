@@ -104,10 +104,5 @@ func (ng *NameGenerator) intelligentTruncate(namePrefix string) string {
 		result = result[:len(result)-1]
 	}
 
-	// Ensure last character is alphanumeric
-	if len(result) > 0 && !regexp.MustCompile(`[a-z0-9]$`).MatchString(result) {
-		result = result[:len(result)-1]
-	}
-
 	return result
 }

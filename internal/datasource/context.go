@@ -328,7 +328,7 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		EnvironmentName: data.EnvironmentName.ValueString(),
 		EnvironmentType: data.EnvironmentType.ValueString(),
 
-		Enabled:      data.Enabled.ValueBoolPointer() != nil && *data.Enabled.ValueBoolPointer(),
+		Enabled:      data.Enabled.IsNull() || data.Enabled.ValueBool(),
 		Availability: data.Availability.ValueString(),
 		ManagedBy:    data.ManagedBy.ValueString(),
 		DeletionDate: data.DeletionDate.ValueString(),
@@ -346,10 +346,10 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		SecurityReview: data.SecurityReview.ValueString(),
 		PrivacyReview:  data.PrivacyReview.ValueString(),
 
-		SourceRepoTagsEnabled: data.SourceRepoTagsEnabled.ValueBoolPointer() != nil && *data.SourceRepoTagsEnabled.ValueBoolPointer(),
-		SystemPrefixesEnabled: data.SystemPrefixesEnabled.ValueBoolPointer() != nil && *data.SystemPrefixesEnabled.ValueBoolPointer(),
-		NotApplicableEnabled:  data.NotApplicableEnabled.ValueBoolPointer() != nil && *data.NotApplicableEnabled.ValueBoolPointer(),
-		OwnerTagsEnabled:      data.OwnerTagsEnabled.ValueBoolPointer() != nil && *data.OwnerTagsEnabled.ValueBoolPointer(),
+		SourceRepoTagsEnabled: data.SourceRepoTagsEnabled.IsNull() || data.SourceRepoTagsEnabled.ValueBool(),
+		SystemPrefixesEnabled: data.SystemPrefixesEnabled.IsNull() || data.SystemPrefixesEnabled.ValueBool(),
+		NotApplicableEnabled:  data.NotApplicableEnabled.IsNull() || data.NotApplicableEnabled.ValueBool(),
+		OwnerTagsEnabled:      data.OwnerTagsEnabled.IsNull() || data.OwnerTagsEnabled.ValueBool(),
 	}
 
 	// Set defaults
