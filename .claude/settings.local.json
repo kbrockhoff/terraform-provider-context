@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(go mod init:*)",
+      "Bash(go test:*)",
+      "Bash(go build:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "sequential-thinking",
+    "filesystem",
+    "context7",
+    "aws-documentation"
+  ]
+}
