@@ -4,7 +4,11 @@
       "Bash(mkdir:*)",
       "Bash(go mod init:*)",
       "Bash(go test:*)",
-      "Bash(go build:*)"
+      "Bash(go build:*)",
+      "mcp__filesystem__create_directory",
+      "mcp__filesystem__move_file",
+      "mcp__filesystem__list_directory",
+      "Bash(make test:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

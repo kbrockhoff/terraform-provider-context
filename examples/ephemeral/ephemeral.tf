@@ -14,7 +14,7 @@ provider "brockhoff" {
 data "brockhoff_context" "ephemeral" {
   namespace        = "test"
   name             = "feature-branch"
-  environment      = "ephemeral"
+  environment      = "eph"
   environment_type = "Ephemeral" # This triggers auto-calculation of deletion_date
 
   availability = "spot"

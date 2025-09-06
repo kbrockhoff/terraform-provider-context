@@ -43,7 +43,7 @@ build-all: ## Build provider for all supported platforms
 install: build ## Install provider locally for development
 	@echo "Installing provider locally..."
 	@mkdir -p $(LOCAL_PROVIDER_DIR)
-	@cp bin/$(BINARY_NAME) $(LOCAL_PROVIDER_DIR)/$(BINARY_NAME)_v$(VERSION)
+	@cp bin/$(BINARY_NAME) $(LOCAL_PROVIDER_DIR)/terraform-provider-context_v$(VERSION)
 	@echo "✓ Provider installed to: $(LOCAL_PROVIDER_DIR)"
 	@echo "✓ You can now use the provider in your Terraform configurations"
 
@@ -72,14 +72,18 @@ test-coverage: ## Run tests with coverage report
 .PHONY: test-examples
 test-examples: install ## Test example configurations
 	@echo "Testing example configurations..."
-	@for example in examples/*.tf; do \
-		echo "Testing $$example..."; \
-		cd $$(dirname $$example) && terraform init -upgrade && terraform validate && terraform plan; \
-		if [ $$? -ne 0 ]; then \
-			echo "❌ Example $$example failed"; \
-			exit 1; \
+	@for dir in examples/*/; do \
+		if [ -d "$$dir" ]; then \
+			echo "Testing $$dir..."; \
+			cd "$$dir" && \
+			TF_CLI_CONFIG_FILE="../.terraformrc" terraform validate && \
+			TF_CLI_CONFIG_FILE="../.terraformrc" terraform plan; \
+			if [ $$? -ne 0 ]; then \
+				echo "❌ Example $$dir failed"; \
+				exit 1; \
+			fi; \
+			cd ../..; \
 		fi; \
-		cd ..; \
 	done
 	@echo "✓ All examples validated successfully"
 
@@ -219,7 +223,7 @@ debug-install: ## Install provider with debug information
 	@echo "Installing provider with debug support..."
 	go build -gcflags="all=-N -l" -o bin/$(BINARY_NAME)_debug -ldflags="-X main.version=$(VERSION)-debug"
 	@mkdir -p $(LOCAL_PROVIDER_DIR)
-	@cp bin/$(BINARY_NAME)_debug $(LOCAL_PROVIDER_DIR)/$(BINARY_NAME)_v$(VERSION)
+	@cp bin/$(BINARY_NAME)_debug $(LOCAL_PROVIDER_DIR)/terraform-provider-context_v$(VERSION)
 	@echo "✓ Debug provider installed"
 	@echo "✓ Use 'dlv attach' to debug the provider process"
 
