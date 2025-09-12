@@ -7,13 +7,13 @@ import (
 
 // Precompiled regular expressions
 var (
-	awsSanitizeRegex     = regexp.MustCompile(`[^a-zA-Z0-9 \\.:=+@_/-]`)
-	awsValidateKeyRegex  = regexp.MustCompile(`^[a-zA-Z0-9 +\-=._:/]+$`)
-	azureSanitizeRegex   = regexp.MustCompile(`[ <>%&\\?/#:]`)
-	azureValidateKeyRegex = regexp.MustCompile(`[<>%&\\?/]`)
-	gcpSanitizeRegex     = regexp.MustCompile(`[^a-z0-9_-]`)
-	gcpValidateKeyRegex  = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
-	defaultSanitizeRegex = regexp.MustCompile(`[<>%&\\?]`)
+	awsSanitizeRegex        = regexp.MustCompile(`[^a-zA-Z0-9 \\.:=+@_/-]`)
+	awsValidateKeyRegex     = regexp.MustCompile(`^[a-zA-Z0-9 +\-=._:/]+$`)
+	azureSanitizeRegex      = regexp.MustCompile(`[ <>%&\\?/#:]`)
+	azureValidateKeyRegex   = regexp.MustCompile(`[<>%&\\?/]`)
+	gcpSanitizeRegex        = regexp.MustCompile(`[^a-z0-9_-]`)
+	gcpValidateKeyRegex     = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
+	defaultSanitizeRegex    = regexp.MustCompile(`[<>%&\\?]`)
 	defaultValidateKeyRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 )
 
