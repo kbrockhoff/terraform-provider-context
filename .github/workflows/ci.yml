@@ -192,10 +192,7 @@ jobs:
     - name: Download dependencies
       run: go mod download
 
-    - name: Install provider locally
-      run: make install
-
-    - name: Validate examples
+    - name: Install provider locally and Validate examples
       run: make test-examples
 
   # Security Scan Job

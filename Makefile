@@ -10,6 +10,14 @@ TERRAFORM_PLUGINS_DIR = ~/.terraform.d/plugins
 REGISTRY_NAMESPACE = registry.terraform.io/kbrockhoff/context
 LOCAL_PROVIDER_DIR = $(TERRAFORM_PLUGINS_DIR)/$(REGISTRY_NAMESPACE)/$(VERSION)/$(GOOS)_$(GOARCH)
 
+# Determine Terraform CLI config file path
+# Use CI-specific path if running in GitHub Actions, otherwise use local path
+ifdef GITHUB_ACTIONS
+	TF_CLI_CONFIG_FILE = $(GITHUB_WORKSPACE)/.terraformrc
+else
+	TF_CLI_CONFIG_FILE = $(PWD)/.terraformrc
+endif
+
 # Default target
 .DEFAULT_GOAL := help
 
@@ -45,6 +53,9 @@ install: build ## Install provider locally for development
 	@mkdir -p $(LOCAL_PROVIDER_DIR)
 	@cp bin/$(BINARY_NAME) $(LOCAL_PROVIDER_DIR)/terraform-provider-context_v$(VERSION)
 	@echo "✓ Provider installed to: $(LOCAL_PROVIDER_DIR)"
+	@echo "Creating .terraformrc from template..."
+	@sed "s|PROVIDER_PATH|$(LOCAL_PROVIDER_DIR)|g" .terraformrc.tmpl > $(TF_CLI_CONFIG_FILE)
+	@echo "✓ Created $(TF_CLI_CONFIG_FILE)"
 	@echo "✓ You can now use the provider in your Terraform configurations"
 
 # Testing targets
@@ -76,8 +87,9 @@ test-examples: install ## Test example configurations
 		if [ -d "$$dir" ]; then \
 			echo "Testing $$dir..."; \
 			cd "$$dir" && \
-			TF_CLI_CONFIG_FILE="../.terraformrc" terraform validate && \
-			TF_CLI_CONFIG_FILE="../.terraformrc" terraform plan; \
+			TF_CLI_CONFIG_FILE="$(TF_CLI_CONFIG_FILE)" terraform init -upgrade && \
+			TF_CLI_CONFIG_FILE="$(TF_CLI_CONFIG_FILE)" terraform validate && \
+			TF_CLI_CONFIG_FILE="$(TF_CLI_CONFIG_FILE)" terraform plan; \
 			if [ $$? -ne 0 ]; then \
 				echo "❌ Example $$dir failed"; \
 				exit 1; \
@@ -230,25 +242,25 @@ debug-install: ## Install provider with debug information
 .PHONY: terraform-init
 terraform-init: install ## Initialize Terraform in examples directory
 	@echo "Initializing Terraform examples..."
-	@cd examples && terraform init -upgrade
+	@cd examples && TF_CLI_CONFIG_FILE="$(TF_CLI_CONFIG_FILE)" terraform init -upgrade
 	@echo "✓ Terraform initialized in examples/"
 
 .PHONY: terraform-plan
 terraform-plan: terraform-init ## Run terraform plan on examples
 	@echo "Running terraform plan on examples..."
-	@cd examples && terraform plan -out=tfplan
+	@cd examples && TF_CLI_CONFIG_FILE="$(TF_CLI_CONFIG_FILE)" terraform plan -out=tfplan
 	@echo "✓ Terraform plan completed"
 
 .PHONY: terraform-apply
 terraform-apply: terraform-plan ## Apply terraform configuration (examples)
 	@echo "Applying terraform configuration..."
-	@cd examples && terraform apply tfplan
+	@cd examples && TF_CLI_CONFIG_FILE="$(TF_CLI_CONFIG_FILE)" terraform apply tfplan
 	@echo "✓ Terraform apply completed"
 
 .PHONY: terraform-destroy
 terraform-destroy: ## Destroy terraform resources (examples)
 	@echo "Destroying terraform resources..."
-	@cd examples && terraform destroy -auto-approve
+	@cd examples && TF_CLI_CONFIG_FILE="$(TF_CLI_CONFIG_FILE)" terraform destroy -auto-approve
 	@echo "✓ Terraform resources destroyed"
 
 # CI/CD targets
