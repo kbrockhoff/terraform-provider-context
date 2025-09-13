@@ -43,6 +43,7 @@ Thumbs.db
 *.tfplan
 .terraform/
 .terraform.lock.hcl
+.terraformrc
 
 # Build artifacts
 bin/
