@@ -125,7 +125,7 @@ jobs:
         fi
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: terraform-provider-brockhoff_${{ matrix.os }}_${{ matrix.arch }}
         path: dist/terraform-provider-brockhoff_${{ matrix.os }}_${{ matrix.arch }}*
