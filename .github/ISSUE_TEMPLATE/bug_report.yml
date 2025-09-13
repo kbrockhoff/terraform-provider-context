@@ -1,0 +1,170 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to file a bug report! Please provide as much detail as possible to help us reproduce and fix the issue.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm you have completed the following steps
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: I have read the provider documentation
+          required: true
+        - label: I have tested with the latest version of the provider
+          required: true
+
+  - type: input
+    id: provider_version
+    attributes:
+      label: Provider Version
+      description: Which version of the provider are you using?
+      placeholder: "e.g., 1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: terraform_version
+    attributes:
+      label: Terraform Version
+      description: Which version of Terraform are you using?
+      placeholder: "e.g., 1.6.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: cloud_provider
+    attributes:
+      label: Cloud Provider
+      description: Which cloud provider configuration are you using?
+      options:
+        - AWS
+        - Azure
+        - GCP
+        - Default/DC
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: Describe the issue you're experiencing...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: Describe what you expected to happen...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: Describe what actually happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to Reproduce
+      description: Please provide detailed steps to reproduce the issue
+      placeholder: |
+        1. Configure the provider with...
+        2. Create a data source with...
+        3. Run terraform plan/apply...
+        4. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Terraform Configuration
+      description: Please provide the relevant Terraform configuration
+      render: hcl
+      placeholder: |
+        provider "brockhoff" {
+          cloud_provider = "aws"
+          tag_prefix     = "bc-"
+        }
+
+        data "brockhoff_context" "example" {
+          # Your configuration here
+        }
+    validations:
+      required: true
+
+  - type: textarea
+    id: error_output
+    attributes:
+      label: Error Output
+      description: Please provide any error messages or logs
+      render: shell
+      placeholder: |
+        Error: ...
+        
+        Or paste Terraform output here...
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: Please provide additional environment information
+      placeholder: |
+        Operating System: (e.g., macOS, Linux, Windows)
+        Shell: (e.g., bash, zsh, powershell)
+        Any other relevant environment details...
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this issue?
+      options:
+        - Low - Minor inconvenience, workaround available
+        - Medium - Significant impact, workaround available
+        - High - Major functionality broken, no workaround
+        - Critical - Provider unusable, blocking deployment
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Have you found any workarounds for this issue?
+      placeholder: Describe any workarounds you've discovered...
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or files that might be helpful
+      placeholder: Any additional information that might help us understand the issue...
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to contribute a fix?
+      options:
+        - label: I would be willing to submit a PR to fix this issue

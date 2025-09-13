@@ -1,0 +1,207 @@
+name: 📚 Documentation Issue
+description: Report an issue with documentation or suggest improvements
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve our documentation! Clear, accurate documentation is essential for user success.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm you have completed the following steps
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: I have checked the latest documentation
+          required: true
+
+  - type: dropdown
+    id: doc_type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - Bug/Error - Incorrect information
+        - Missing - Documentation doesn't exist
+        - Unclear - Confusing or hard to understand
+        - Outdated - Information is obsolete
+        - Enhancement - Suggest improvement
+        - New - Request new documentation
+    validations:
+      required: true
+
+  - type: dropdown
+    id: doc_location
+    attributes:
+      label: Documentation Location
+      description: Where is the documentation issue located?
+      options:
+        - README.md
+        - CONTRIBUTING.md
+        - Provider Documentation (Terraform Registry)
+        - Code Comments/Godoc
+        - Examples
+        - Design Documents
+        - GitHub Issue Templates
+        - Other (specify below)
+    validations:
+      required: true
+
+  - type: input
+    id: doc_url
+    attributes:
+      label: Documentation URL
+      description: Provide the URL or file path where the issue exists
+      placeholder: "e.g., https://registry.terraform.io/providers/kbrockhoff/context/latest/docs or /path/to/file.md"
+
+  - type: textarea
+    id: issue_description
+    attributes:
+      label: Issue Description
+      description: Clearly describe the documentation issue
+      placeholder: |
+        Describe the specific issue with the documentation...
+        
+        For example:
+        - The example configuration is incorrect...
+        - The explanation of X feature is unclear...
+        - Missing documentation for Y functionality...
+        - Information about Z is outdated...
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_content
+    attributes:
+      label: Current Content
+      description: Copy the current documentation content that needs to be fixed (if applicable)
+      placeholder: |
+        Paste the current documentation content here...
+      render: markdown
+
+  - type: textarea
+    id: suggested_content
+    attributes:
+      label: Suggested Content
+      description: Provide suggested improvements or corrections
+      placeholder: |
+        Provide your suggested documentation content here...
+      render: markdown
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and Impact
+      description: Why is this documentation important? Who would benefit from the improvement?
+      placeholder: |
+        Explain the context and impact...
+        
+        For example:
+        - New users struggle with...
+        - Advanced users need information about...
+        - This confuses users trying to...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: user_type
+    attributes:
+      label: Target Audience
+      description: Who is the primary audience for this documentation?
+      multiple: true
+      options:
+        - New users (getting started)
+        - Experienced users (advanced features)
+        - Developers (contributing)
+        - Operators (deployment/management)
+        - All users
+    validations:
+      required: true
+
+  - type: textarea
+    id: related_issues
+    attributes:
+      label: Related Issues
+      description: Are there any related issues, discussions, or PRs?
+      placeholder: |
+        Link to any related issues, discussions, or PRs...
+        
+        For example:
+        - Related to #123
+        - Discussed in #456
+        - Addresses confusion from #789
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this documentation fix?
+      options:
+        - Low - Minor improvement or clarification
+        - Medium - Significant improvement for user experience
+        - High - Critical for user success or prevents confusion
+        - Urgent - Incorrect information that could cause issues
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: doc_improvements
+    attributes:
+      label: Documentation Improvements Needed
+      description: What type of improvements are needed? (Select all that apply)
+      options:
+        - label: Add code examples
+        - label: Add configuration examples
+        - label: Add troubleshooting section
+        - label: Add links to related documentation
+        - label: Improve formatting/structure
+        - label: Add diagrams or images
+        - label: Add FAQ section
+        - label: Add migration guides
+        - label: Update for latest version
+        - label: Fix typos/grammar
+
+  - type: textarea
+    id: examples_needed
+    attributes:
+      label: Examples Needed
+      description: What specific examples would be helpful?
+      placeholder: |
+        Describe what examples would be helpful...
+        
+        For example:
+        - Complete configuration for AWS environment
+        - Example with multiple cloud providers
+        - Common troubleshooting scenarios
+        - Integration with other providers
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or information that would be helpful
+      placeholder: |
+        Any additional information that might help...
+        
+        For example:
+        - Screenshots of confusing sections
+        - Error messages encountered
+        - User feedback received
+        - Industry best practices
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to help improve the documentation?
+      options:
+        - label: I would be willing to submit a PR to fix this documentation issue
+        - label: I can provide feedback and review on documentation changes
+        - label: I can help with writing new documentation
+        - label: I can provide examples or use cases

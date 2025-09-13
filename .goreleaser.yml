@@ -1,0 +1,186 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod verify
+
+builds:
+  - id: terraform-provider-brockhoff
+    main: .
+    binary: terraform-provider-brockhoff_v{{ .Version }}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+    flags:
+      - -trimpath
+
+archives:
+  - id: terraform-provider-brockhoff
+    format: zip
+    builds:
+      - terraform-provider-brockhoff
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - docs/**/*
+      - examples/**/*
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
+  algorithm: sha256
+
+signs:
+  - artifacts: checksum
+    args:
+      - "--batch"
+      - "--local-user"
+      - "{{ .Env.GPG_FINGERPRINT }}"
+      - "--output"
+      - "${signature}"
+      - "--detach-sign"
+      - "${artifact}"
+
+release:
+  github:
+    owner: kbrockhoff
+    name: terraform-provider-context
+  discussion_category_name: "Releases"
+  prerelease: auto
+  name_template: "{{ .ProjectName }} v{{ .Version }}"
+  header: |
+    ## Terraform Provider Context v{{ .Version }}
+
+    This release includes improvements and bug fixes for the Context Terraform Provider.
+
+    ### Installation
+
+    Add the provider to your Terraform configuration:
+
+    ```hcl
+    terraform {
+      required_providers {
+        brockhoff = {
+          source  = "kbrockhoff/context"
+          version = "~> {{ .Version }}"
+        }
+      }
+    }
+    ```
+
+    ### Usage
+
+    ```hcl
+    provider "brockhoff" {
+      cloud_provider = "aws"
+      tag_prefix     = "bc-"
+    }
+
+    data "brockhoff_context" "app" {
+      namespace   = "myorg"
+      name        = "webapp"
+      environment = "prod"
+    }
+    ```
+
+  footer: |
+    **Full Changelog**: https://github.com/kbrockhoff/terraform-provider-context/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    ---
+    
+    ### Registry Information
+    
+    - **Registry**: [registry.terraform.io/kbrockhoff/context](https://registry.terraform.io/providers/kbrockhoff/context/{{ .Version }})
+    - **Documentation**: [Terraform Registry Docs](https://registry.terraform.io/providers/kbrockhoff/context/{{ .Version }}/docs)
+    
+    ### Migration
+    
+    For migration instructions from the previous module, see the [Migration Guide](https://github.com/kbrockhoff/terraform-provider-context#migration-from-module).
+
+# Configuration for terraform registry publishing
+terraform_provider_registry:
+  - name: terraform-provider-brockhoff
+    # The terraform registry will download the provider from github releases
+    # No additional configuration needed here
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+  groups:
+    - title: "🚀 Features"
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: "📖 Documentation"
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 2
+    - title: "🔧 Refactoring"
+      regexp: "^.*refactor[(\\w)]*:+.*$"
+      order: 3
+    - title: "⬆️ Dependencies"
+      regexp: "^.*deps[(\\w)]*:+.*$"
+      order: 4
+    - title: "Other Changes"
+      order: 999
+
+# Homebrew tap (optional)
+brews:
+  - name: terraform-provider-brockhoff
+    homepage: "https://github.com/kbrockhoff/terraform-provider-context"
+    description: "Terraform provider for standardized naming and tagging"
+    license: "MIT"
+    skip_upload: auto
+    dependencies:
+      - name: terraform
+        type: optional
+    repository:
+      owner: kbrockhoff
+      name: homebrew-tap
+      branch: main
+    commit_author:
+      name: "kbrockhoff"
+      email: "kbrockhoff@gmail.com"
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+
+# Docker images (optional for development)
+dockers:
+  - image_templates:
+      - "ghcr.io/kbrockhoff/terraform-provider-context:{{ .Version }}"
+      - "ghcr.io/kbrockhoff/terraform-provider-context:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/kbrockhoff/terraform-provider-context"
+
+# Announce releases
+announce:
+  skip: '{{- if or .Prerelease (eq .Env.SKIP_ANNOUNCE "true") -}}true{{- end -}}'

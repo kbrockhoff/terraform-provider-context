@@ -1,0 +1,282 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'examples/**'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'examples/**'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  GO_VERSION: '1.25.1'
+
+jobs:
+  # Test Job
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Run go vet
+      run: go vet ./...
+
+    - name: Run go fmt check
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "The following files are not formatted correctly:"
+          gofmt -s -l .
+          exit 1
+        fi
+
+    - name: Run unit tests
+      run: go test -v -race -coverprofile=coverage.out ./internal/...
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+
+  # Lint Job
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v8
+      with:
+        version: v2.4
+        args: --timeout=5m
+
+  # Build Job
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    timeout-minutes: 10
+
+    strategy:
+      matrix:
+        os: [linux, darwin, windows]
+        arch: [amd64, arm64]
+        exclude:
+          - os: windows
+            arch: arm64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.os }}
+        GOARCH: ${{ matrix.arch }}
+      run: |
+        mkdir -p dist
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          go build -o dist/terraform-provider-brockhoff_${{ matrix.os }}_${{ matrix.arch }}.exe -ldflags="-s -w -X main.version=${GITHUB_REF#refs/tags/}"
+        else
+          go build -o dist/terraform-provider-brockhoff_${{ matrix.os }}_${{ matrix.arch }} -ldflags="-s -w -X main.version=${GITHUB_REF#refs/tags/}"
+        fi
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-provider-brockhoff_${{ matrix.os }}_${{ matrix.arch }}
+        path: dist/terraform-provider-brockhoff_${{ matrix.os }}_${{ matrix.arch }}*
+        retention-days: 7
+
+  # Acceptance Tests Job
+  acceptance-test:
+    name: Acceptance Tests
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    timeout-minutes: 30
+    if: github.event_name == 'pull_request'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: latest
+        terraform_wrapper: false
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Install provider locally
+      run: make install
+
+    - name: Run acceptance tests
+      env:
+        TF_ACC: "1"
+      run: go test -v -timeout 30m ./internal/provider/...
+
+  # Example Validation Job
+  validate-examples:
+    name: Validate Examples
+    runs-on: ubuntu-latest
+    needs: [build]
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: latest
+        terraform_wrapper: false
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Install provider locally and Validate examples
+      run: make test-examples
+
+  # Security Scan Job
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Run Gosec Security Scanner
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: '-no-fail -fmt sarif -out gosec.sarif ./...'
+
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: gosec.sarif
+
+  # Documentation Job
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: Install tfplugindocs
+      run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
+
+    - name: Generate documentation
+      run: tfplugindocs generate
+
+    - name: Check for documentation changes
+      id: docs-check
+      run: |
+        if git diff --quiet; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit documentation changes
+      if: steps.docs-check.outputs.changed == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add docs/
+        git commit -m "docs: auto-generate provider documentation [skip ci]" || exit 0
+        git push
+
+  # Summary Job
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [test, lint, build, validate-examples]
+    if: always()
+
+    steps:
+    - name: Check job results
+      run: |
+        echo "Test result: ${{ needs.test.result }}"
+        echo "Lint result: ${{ needs.lint.result }}"
+        echo "Build result: ${{ needs.build.result }}"
+        echo "Examples result: ${{ needs.validate-examples.result }}"
+        
+        if [[ "${{ needs.test.result }}" == "failure" || "${{ needs.lint.result }}" == "failure" || "${{ needs.build.result }}" == "failure" ]]; then
+          echo "❌ CI pipeline failed"
+          exit 1
+        else
+          echo "✅ CI pipeline passed"
+        fi
