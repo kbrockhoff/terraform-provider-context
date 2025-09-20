@@ -19,12 +19,12 @@ jobs:
     steps:
     - name: Dependabot metadata
       id: metadata
-      uses: dependabot/fetch-metadata@v1
+      uses: dependabot/fetch-metadata@v2
       with:
         github-token: "${{ secrets.GITHUB_TOKEN }}"
 
     - name: Wait for CI to complete
-      uses: fountainhead/action-wait-for-check@v1.1.0
+      uses: fountainhead/action-wait-for-check@v1.2.0
       id: wait-for-ci
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
