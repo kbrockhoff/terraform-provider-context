@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 GitHub Discussions
+    url: https://github.com/kbrockhoff/terraform-provider-context/discussions
+    about: Ask questions, share ideas, or discuss general topics about the provider
+  - name: 📖 Documentation
+    url: https://registry.terraform.io/providers/kbrockhoff/context/latest/docs
+    about: Check the official provider documentation on the Terraform Registry
+  - name: 💡 Examples
+    url: https://github.com/kbrockhoff/terraform-provider-context/tree/main/examples
+    about: Browse usage examples and sample configurations

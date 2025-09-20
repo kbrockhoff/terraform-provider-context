@@ -1,0 +1,229 @@
+name: 🔒 Security Issue
+description: Report a security vulnerability (for non-sensitive issues only)
+title: "[Security]: "
+labels: ["security", "needs-triage", "priority-high"]
+assignees: ["kbrockhoff"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **IMPORTANT SECURITY NOTICE** ⚠️
+        
+        **For sensitive security issues, DO NOT use this public issue template.**
+        
+        Instead, please email security details privately to: **kbrockhoff@gmail.com**
+        
+        Use this template only for:
+        - General security best practice suggestions
+        - Non-sensitive security improvements
+        - Public security discussions
+        
+        If you're unsure whether an issue is sensitive, err on the side of caution and email privately.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm you understand the security reporting process
+      options:
+        - label: I understand this is for NON-SENSITIVE security issues only
+          required: true
+        - label: I have confirmed this is not a vulnerability that could be exploited
+          required: true
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+
+  - type: dropdown
+    id: security_type
+    attributes:
+      label: Security Issue Type
+      description: What type of security issue is this?
+      options:
+        - General Security Improvement
+        - Security Best Practice Suggestion
+        - Dependency Security Update
+        - Configuration Security Enhancement
+        - Documentation Security Clarification
+        - Security Testing Enhancement
+        - Other (specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Security Issue Description
+      description: Describe the security concern or improvement suggestion
+      placeholder: |
+        Describe the security issue or suggestion...
+        
+        For example:
+        - The provider should validate inputs to prevent...
+        - Documentation should clarify security implications of...
+        - Dependencies should be updated to address...
+        - Configuration could be improved to enhance security by...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Security Impact Level
+      description: What is the potential impact of this security issue?
+      options:
+        - Low - Minor security improvement
+        - Medium - Moderate security enhancement
+        - High - Important security fix needed
+        - Critical - Serious security issue (EMAIL PRIVATELY INSTEAD)
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected_components
+    attributes:
+      label: Affected Components
+      description: Which parts of the provider are affected?
+      placeholder: |
+        List affected components...
+        
+        For example:
+        - Provider configuration validation
+        - Data source processing
+        - Tag generation logic
+        - Git repository integration
+        - External command execution
+
+  - type: textarea
+    id: current_behavior
+    attributes:
+      label: Current Behavior
+      description: How does the provider currently behave regarding this security concern?
+      placeholder: |
+        Describe the current behavior that raises security concerns...
+
+  - type: textarea
+    id: suggested_improvement
+    attributes:
+      label: Suggested Security Improvement
+      description: What specific improvements do you suggest?
+      placeholder: |
+        Describe your suggested security improvements...
+        
+        For example:
+        - Add input validation for...
+        - Implement rate limiting for...
+        - Sanitize outputs to prevent...
+        - Update dependencies to version...
+
+  - type: textarea
+    id: potential_risks
+    attributes:
+      label: Potential Security Risks
+      description: What are the potential risks if this issue is not addressed?
+      placeholder: |
+        Describe potential security risks...
+        
+        For example:
+        - Could lead to information disclosure
+        - May allow unauthorized access to...
+        - Could be exploited to...
+        - Increases attack surface by...
+
+  - type: textarea
+    id: mitigation_steps
+    attributes:
+      label: Current Mitigation Steps
+      description: Are there any workarounds or mitigation steps users can take?
+      placeholder: |
+        Describe any current mitigation options...
+        
+        For example:
+        - Users can avoid this by...
+        - Implement additional validation by...
+        - Configure security controls such as...
+
+  - type: checkboxes
+    id: security_areas
+    attributes:
+      label: Security Areas of Concern
+      description: Which security areas does this issue relate to? (Select all that apply)
+      options:
+        - label: Input validation
+        - label: Output sanitization
+        - label: Authentication/Authorization
+        - label: Data privacy/protection
+        - label: Dependency vulnerabilities
+        - label: Configuration security
+        - label: Logging/audit trail
+        - label: Error message information disclosure
+        - label: Network security
+        - label: File system access
+        - label: Command execution
+        - label: Memory safety
+
+  - type: textarea
+    id: environment_context
+    attributes:
+      label: Environment Context
+      description: In what environments or scenarios is this security concern most relevant?
+      placeholder: |
+        Describe relevant environments or scenarios...
+        
+        For example:
+        - In shared environments where...
+        - When using with sensitive data...
+        - In automated CI/CD pipelines...
+        - When configured with external systems...
+
+  - type: textarea
+    id: references
+    attributes:
+      label: Security References
+      description: Any relevant security standards, CVEs, or documentation references?
+      placeholder: |
+        Provide relevant security references...
+        
+        For example:
+        - OWASP guidelines for...
+        - CVE-XXXX-XXXX related to...
+        - Security best practices from...
+        - Industry standards such as...
+
+  - type: textarea
+    id: testing_approach
+    attributes:
+      label: Security Testing
+      description: How should this security improvement be tested?
+      placeholder: |
+        Describe testing approaches...
+        
+        For example:
+        - Unit tests for validation logic
+        - Integration tests with malicious inputs
+        - Security scanning tools
+        - Penetration testing scenarios
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to help address this security issue?
+      options:
+        - label: I would be willing to submit a PR to fix this security issue
+        - label: I can provide security testing and validation
+        - label: I can help with security documentation
+        - label: I can provide security expertise and review
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        
+        ## Security Contact Information
+        
+        For sensitive security issues, please contact:
+        - **Email**: kbrockhoff@gmail.com
+        - **Subject Line**: [SECURITY] Terraform Provider Context Vulnerability
+        
+        We take security seriously and will respond to privately reported vulnerabilities within 24 hours.

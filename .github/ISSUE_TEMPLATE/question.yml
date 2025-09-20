@@ -1,0 +1,184 @@
+name: ❓ Question
+description: Ask a question about usage, configuration, or troubleshooting
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your question! Before submitting, please check:
+        
+        - 📖 [Provider Documentation](https://registry.terraform.io/providers/kbrockhoff/context/latest/docs)
+        - 💡 [Usage Examples](https://github.com/kbrockhoff/terraform-provider-context/tree/main/examples)
+        - 💬 [GitHub Discussions](https://github.com/kbrockhoff/terraform-provider-context/discussions) for general questions
+        
+        For complex discussions or brainstorming, consider using GitHub Discussions instead.
+
+  - type: dropdown
+    id: question_category
+    attributes:
+      label: Question Category
+      description: What type of question is this?
+      options:
+        - Configuration - How to configure the provider
+        - Usage - How to use specific features
+        - Troubleshooting - Something isn't working as expected
+        - Best Practices - Recommended approaches
+        - Migration - Moving from the external module
+        - Integration - Using with other providers/tools
+        - Performance - Optimization questions
+        - Cloud Provider Specific - Questions about specific platforms
+        - Other - General questions
+    validations:
+      required: true
+
+  - type: input
+    id: provider_version
+    attributes:
+      label: Provider Version
+      description: Which version of the provider are you using?
+      placeholder: "e.g., 1.0.0 or latest"
+
+  - type: input
+    id: terraform_version
+    attributes:
+      label: Terraform Version
+      description: Which version of Terraform are you using?
+      placeholder: "e.g., 1.6.0"
+
+  - type: dropdown
+    id: cloud_provider
+    attributes:
+      label: Cloud Provider
+      description: Which cloud provider are you using?
+      options:
+        - AWS
+        - Azure
+        - GCP
+        - Default/DC
+        - Multiple providers
+        - Not cloud-specific
+        - Other (specify in question)
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know?
+      placeholder: |
+        Please be as specific as possible...
+        
+        For example:
+        - How do I configure the provider to...?
+        - What's the best way to...?
+        - Why is the provider behaving...?
+        - Can the provider support...?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and Background
+      description: Provide context about what you're trying to accomplish
+      placeholder: |
+        Help us understand your use case...
+        
+        For example:
+        - I'm trying to set up tagging for a multi-environment setup...
+        - My organization requires specific naming conventions...
+        - I'm migrating from the external module and need to...
+        - I have a complex infrastructure setup where...
+
+  - type: textarea
+    id: current_configuration
+    attributes:
+      label: Current Configuration
+      description: Share your current Terraform configuration (if relevant)
+      render: hcl
+      placeholder: |
+        provider "brockhoff" {
+          # Your provider configuration
+        }
+
+        data "brockhoff_context" "example" {
+          # Your data source configuration
+        }
+
+        # Any other relevant configuration
+
+  - type: textarea
+    id: attempted_solutions
+    attributes:
+      label: What Have You Tried?
+      description: What approaches have you already attempted?
+      placeholder: |
+        Describe what you've already tried...
+        
+        For example:
+        - I tried configuring it with...
+        - I looked at the documentation for...
+        - I attempted to use...
+        - I found examples that show... but they don't work for my case because...
+
+  - type: textarea
+    id: expected_outcome
+    attributes:
+      label: Expected Outcome
+      description: What result are you hoping to achieve?
+      placeholder: |
+        Describe what you want to accomplish...
+        
+        For example:
+        - I want the provider to generate tags that...
+        - I need the name prefix to follow the pattern...
+        - I expect the output to include...
+        - The configuration should result in...
+
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: Additional Information
+      description: Any other details that might be relevant?
+      placeholder: |
+        Any other context that might be helpful...
+        
+        For example:
+        - Organizational requirements or constraints
+        - Error messages you're seeing
+        - Links to related documentation
+        - Screenshots or examples
+
+  - type: checkboxes
+    id: urgency
+    attributes:
+      label: Urgency
+      description: How urgent is this question?
+      options:
+        - label: Low - General curiosity or future planning
+        - label: Medium - Needed for current project
+        - label: High - Blocking current work
+        - label: Critical - Production issue
+
+  - type: checkboxes
+    id: help_others
+    attributes:
+      label: Community Benefit
+      description: Do you think this question would help others?
+      options:
+        - label: This might be a common question that would benefit from documentation
+        - label: This could be addressed with better examples
+        - label: This might indicate a need for a feature enhancement
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to help improve the project based on the answer?
+      options:
+        - label: I would be willing to contribute documentation improvements
+        - label: I could provide examples once I understand the solution
+        - label: I would be interested in contributing code if enhancements are needed
+        - label: I can help other users with similar questions in the future
