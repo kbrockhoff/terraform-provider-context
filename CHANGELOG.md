@@ -1,5 +1,26 @@
+# Changelog
 
+## 1.0.0 (2025-09-27)
+
+
+### Features
+
+* implement core Terraform provider functionality ([2c680f1](https://github.com/kbrockhoff/terraform-provider-context/commit/2c680f1d959ec2f3a88df77a1c2afcc702ac613e))
+* make TF_CLI_CONFIG_FILE work both locally and in GitHub Actions ([1aaa421](https://github.com/kbrockhoff/terraform-provider-context/commit/1aaa421d6f15a249c6b2e522b70edaa4a56ba73a))
+* update tag names to match terraform-external-context and clean up environment tags ([0cdaacd](https://github.com/kbrockhoff/terraform-provider-context/commit/0cdaacdecc858dd73f390b1231b0e5fa0457e86d))
+
+
+### Bug Fixes
+
+* configure goreleaser and release-please for Terraform Registry publishing ([86fe222](https://github.com/kbrockhoff/terraform-provider-context/commit/86fe2222d515a62e93c240c31ffb2c511222732f))
+* resolve gemini identified bugs ([c888d2e](https://github.com/kbrockhoff/terraform-provider-context/commit/c888d2e2e000806117dbd15974393a73e3326481))
+* resolve github copilot comments ([7a041be](https://github.com/kbrockhoff/terraform-provider-context/commit/7a041bec454f11a6721806b38a7e19e399df5520))
+* update golangci-lint configuration for v2.4.0 compatibility ([8aaa904](https://github.com/kbrockhoff/terraform-provider-context/commit/8aaa9043f4f3baf26dbd8f5a7712d7d768bd5e5e))
+
+
+### Performance Improvements
+
+* precompile regular expressions in cloud provider implementations ([3fe2cc1](https://github.com/kbrockhoff/terraform-provider-context/commit/3fe2cc176c022ec7f9172d52fe55b5f91248e89e))
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
