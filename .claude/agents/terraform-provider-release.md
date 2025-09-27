@@ -59,7 +59,7 @@ You ensure compliance with:
 
 1. **Preconditions Check**: Verify that:
    - The repository follows terraform-provider-* naming convention
-   - go version is 1.23.x or higher 
+   - go version is 1.25.x or higher 
    - goreleaser version is 2.x or higher
 
 2. **Assessment Phase**: Analyze the current repository structure, existing configuration files, and identify missing or misconfigured components.
