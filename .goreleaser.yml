@@ -69,7 +69,7 @@ signs:
 release:
   extra_files:
     - glob: 'terraform-registry-manifest.json'
-  # If you want to manually examine the release before its live, uncomment this line:
+  # If you want to manually examine the release before it's live, uncomment this line:
   # draft: true
 
 changelog:
