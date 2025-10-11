@@ -15,15 +15,31 @@ builds:
     ldflags:
       - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}}'
     goos:
+      - freebsd
       - windows
       - linux
       - darwin
     goarch:
       - amd64
+      - '386'
+      - arm
       - arm64
+    ignore:
+      - goos: darwin
+        goarch: '386'
+      - goos: windows
+        goarch: arm
     main: .
 
+archives:
+  - formats:
+      - zip
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+
 checksum:
+  extra_files:
+    - glob: 'terraform-registry-manifest.json'
+      name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
 
@@ -37,12 +53,6 @@ signs:
       - "${signature}"
       - "--detach-sign"
       - "${artifact}"
-
-terraform:
-  providers:
-    - name: context
-      namespace: kbrockhoff
-      source: registry.terraform.io/kbrockhoff/context
 
 release:
   # draft: true
