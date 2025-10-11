@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.3...v0.1.4) (2025-10-11)
+
+
+### Bug Fixes
+
+* use source file glob in release.extra_files ([fbdd2c7](https://github.com/kbrockhoff/terraform-provider-context/commit/fbdd2c70cedb907fb05768f7b679a66c17f6df94))
+
 ## [0.1.3](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.2...v0.1.3) (2025-10-11)
 
 
