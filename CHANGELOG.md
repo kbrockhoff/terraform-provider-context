@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.1...v0.1.2) (2025-10-11)
+
+
+### Bug Fixes
+
+* update goreleaser config to v2 standards ([5546b3c](https://github.com/kbrockhoff/terraform-provider-context/commit/5546b3cabbf5057bd79164f87ca0dda34966b54c))
+
 ## [0.1.1](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.0...v0.1.1) (2025-10-11)
 
 
