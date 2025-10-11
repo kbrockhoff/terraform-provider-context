@@ -55,6 +55,8 @@ signs:
       - "${artifact}"
 
 release:
+  extra_files:
+    - glob: './dist/{{ .ProjectName }}_{{ .Version }}_manifest.json'
   # draft: true
 
 changelog:
