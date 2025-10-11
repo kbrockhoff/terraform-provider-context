@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.0...v0.1.1) (2025-10-11)
+
+
+### Bug Fixes
+
+* integrate release-please with goreleaser workflow ([90b9e22](https://github.com/kbrockhoff/terraform-provider-context/commit/90b9e224d46a0742e3c32dd0968668e58994fc1b))
+
 ## 0.1.0 (2025-09-27)
 
 
