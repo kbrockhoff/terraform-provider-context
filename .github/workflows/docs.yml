@@ -1,0 +1,55 @@
+name: Docs
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+env:
+  GO_VERSION: '1.25.1'
+
+jobs:
+  generate-docs:
+    name: Generate and Commit Provider Docs
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout main
+      uses: actions/checkout@v5
+      with:
+        ref: main
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: Install tfplugindocs
+      run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
+
+    - name: Generate documentation
+      run: tfplugindocs generate
+
+    - name: Update version in README
+      env:
+        RELEASE_TAG: ${{ github.event.release.tag_name }}
+      run: |
+        VERSION=${RELEASE_TAG#v}
+        sed -i "s/version = \"[^\"]*\"/version = \"${VERSION}\"/g" README.md
+
+    - name: Commit documentation updates
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add docs/ README.md || true
+        if git diff --staged --quiet; then
+          echo "No documentation changes to commit"
+        else
+          git commit -m "docs: update for release ${{ github.event.release.tag_name }} [skip ci]"
+          git push origin main
+        fi
