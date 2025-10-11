@@ -56,7 +56,8 @@ signs:
 
 release:
   extra_files:
-    - glob: './dist/{{ .ProjectName }}_{{ .Version }}_manifest.json'
+    - glob: 'terraform-registry-manifest.json'
+      name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
   # draft: true
 
 changelog:
