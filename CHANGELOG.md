@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.2...v0.1.3) (2025-10-11)
+
+
+### Bug Fixes
+
+* add manifest.json to release extra_files ([24d2c9b](https://github.com/kbrockhoff/terraform-provider-context/commit/24d2c9bd7df7414174c0dcc4f489ee7d43625400))
+* reference renamed manifest from dist directory in release ([070a3fc](https://github.com/kbrockhoff/terraform-provider-context/commit/070a3fc1f31bde569d3af4d588264e91298d70c2))
+
 ## [0.1.2](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.1...v0.1.2) (2025-10-11)
 
 
