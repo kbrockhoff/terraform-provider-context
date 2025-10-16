@@ -17,6 +17,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  security-events: write
 
 env:
   GO_VERSION: '1.25.1'
@@ -61,7 +62,7 @@ jobs:
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
       with:
-        file: ./coverage.out
+        files: ./coverage.out
         flags: unittests
         name: codecov-umbrella
 
