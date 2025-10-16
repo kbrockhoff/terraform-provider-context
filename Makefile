@@ -138,7 +138,7 @@ check: fmt vet test ## Run all code quality checks
 docs-generate: ## Generate provider documentation
 	@echo "Generating provider documentation..."
 	@if command -v tfplugindocs >/dev/null 2>&1; then \
-		tfplugindocs generate; \
+		tfplugindocs generate --provider-name=brockhoff; \
 		echo "✓ Documentation generated"; \
 	else \
 		echo "❌ tfplugindocs not found. Install it with: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest"; \
@@ -149,7 +149,7 @@ docs-generate: ## Generate provider documentation
 docs-validate: ## Validate provider documentation
 	@echo "Validating provider documentation..."
 	@if command -v tfplugindocs >/dev/null 2>&1; then \
-		tfplugindocs validate; \
+		tfplugindocs validate --provider-name=brockhoff; \
 		echo "✓ Documentation validated"; \
 	else \
 		echo "❌ tfplugindocs not found. Install it with: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest"; \
