@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.5](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.4...v0.1.5) (2025-10-16)
+
+
+### Bug Fixes
+
+* add --provider-name flag to tfplugindocs commands ([abaa907](https://github.com/kbrockhoff/terraform-provider-context/commit/abaa907146cbe9b0772390c79e42d4d3f2e4c6a7))
+* add custom tfplugindocs template to fix docs generation ([e10aa6d](https://github.com/kbrockhoff/terraform-provider-context/commit/e10aa6d0fd0c9ed36681d7331e90a17cbe7ef4a5))
+* add security-events permission and fix codecov action parameter ([a86666c](https://github.com/kbrockhoff/terraform-provider-context/commit/a86666ceb296fa986b22df5bf934703e4e81cdb7))
+* resolve tfplugindocs path expansion and skip data-sources example directory ([6f8ddcc](https://github.com/kbrockhoff/terraform-provider-context/commit/6f8ddcc07037f62f21d9579239d9dd971a26d535))
+* update security scanner action and add provider-name flag to docs generation ([e126232](https://github.com/kbrockhoff/terraform-provider-context/commit/e1262324b7aaf2e8acbaa9a28e1dd0221eaf63f4))
+
 ## [0.1.4](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.3...v0.1.4) (2025-10-11)
 
 
