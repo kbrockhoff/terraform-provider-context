@@ -1,0 +1,61 @@
+---
+page_title: "brockhoff_context Data Source - terraform-provider-context"
+subcategory: ""
+description: |-
+  Generates standardized naming conventions and cloud-provider-specific tags for infrastructure resources.
+---
+
+# brockhoff_context (Data Source)
+
+Generates standardized naming conventions and cloud-provider-specific tags for infrastructure resources.
+
+## Example Usage
+
+{{tffile "examples/data-sources/brockhoff_context/data-source.tf"}}
+
+## Schema
+
+### Optional
+
+- `namespace` (String) Organization or business unit identifier (1-8 chars, lowercase alphanumeric with hyphens)
+- `name` (String) Unique resource name (combined name_prefix must be 2-24 chars)
+- `environment` (String) Environment abbreviation (1-8 chars, lowercase alphanumeric with hyphens)
+- `environment_name` (String) Full environment name
+- `environment_type` (String) One of: None, Ephemeral, Development, Testing, UAT, Production, MissionCritical
+- `enabled` (Boolean) Enable/disable resource creation
+- `availability` (String) Availability requirement from predefined list (default: "preemptable")
+- `managedby` (String) Management platform identifier (default: "terraform")
+- `deletion_date` (String) Resource deletion date (YYYY-MM-DD format)
+- `pm_platform` (String) Project management platform (e.g., JIRA, SNOW)
+- `pm_project_code` (String) Project code/prefix
+- `itsm_platform` (String) IT Service Management platform
+- `itsm_system_id` (String) ITSM system identifier
+- `itsm_component_id` (String) ITSM component identifier
+- `itsm_instance_id` (String) ITSM instance identifier
+- `cost_center` (String) Cost center for billing
+- `product_owners` (List of String) Product owner email addresses
+- `code_owners` (List of String) Code owner email addresses
+- `data_owners` (List of String) Data owner email addresses
+- `sensitivity` (String) Data sensitivity level from predefined list (default: "confidential")
+- `data_regs` (List of String) Data compliance regulations
+- `security_review` (String) Security review identifier/date
+- `privacy_review` (String) Privacy review identifier/date
+- `source_repo_tags_enabled` (Boolean) Include git repository tags (default: true)
+- `system_prefixes_enabled` (Boolean) Add platform prefixes to system IDs (default: true)
+- `not_applicable_enabled` (Boolean) Include N/A tags for null values (default: true)
+- `owner_tags_enabled` (Boolean) Include owner tags (default: true)
+- `additional_tags` (Map of String) Custom tags to merge
+- `additional_data_tags` (Map of String) Custom data-specific tags to merge
+
+### Read-Only
+
+- `id` (String) Unique identifier for this data source instance
+- `name_prefix` (String) Computed name prefix following Brockhoff standards
+- `tags` (Map of String) Normalized tag map
+- `data_tags` (Map of String) Data-specific tags
+- `tags_as_list_of_maps` (List of Map) Tags formatted for AWS resources
+- `tags_as_kvp_list` (List of String) Tags as key=value pairs
+- `tags_as_comma_separated_string` (String) Tags as comma-separated string
+- `data_tags_as_list_of_maps` (List of Map) Data tags formatted for AWS resources
+- `data_tags_as_kvp_list` (List of String) Data tags as key=value pairs
+- `data_tags_as_comma_separated_string` (String) Data tags as comma-separated string

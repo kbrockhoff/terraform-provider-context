@@ -33,7 +33,7 @@ jobs:
       run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
 
     - name: Generate documentation
-      run: tfplugindocs generate
+      run: tfplugindocs generate --provider-name=brockhoff
 
     - name: Update version in README
       env:

@@ -54,7 +54,7 @@ install: build ## Install provider locally for development
 	@cp bin/$(BINARY_NAME) $(LOCAL_PROVIDER_DIR)/terraform-provider-context_v$(VERSION)
 	@echo "✓ Provider installed to: $(LOCAL_PROVIDER_DIR)"
 	@echo "Creating .terraformrc from template..."
-	@sed "s|PROVIDER_PATH|$(LOCAL_PROVIDER_DIR)|g" .terraformrc.tmpl > $(TF_CLI_CONFIG_FILE)
+	@sed "s|PROVIDER_PATH|$(shell echo $(LOCAL_PROVIDER_DIR) | sed 's|~|$(HOME)|g')|g" .terraformrc.tmpl > $(TF_CLI_CONFIG_FILE)
 	@echo "✓ Created $(TF_CLI_CONFIG_FILE)"
 	@echo "✓ You can now use the provider in your Terraform configurations"
 
@@ -85,6 +85,10 @@ test-examples: install ## Test example configurations
 	@echo "Testing example configurations..."
 	@for dir in examples/*/; do \
 		if [ -d "$$dir" ]; then \
+			case "$$(basename $$dir)" in \
+				data-sources) \
+					continue ;; \
+			esac; \
 			echo "Testing $$dir..."; \
 			cd "$$dir" && \
 			TF_CLI_CONFIG_FILE="$(TF_CLI_CONFIG_FILE)" terraform init -upgrade && \
@@ -138,7 +142,7 @@ check: fmt vet test ## Run all code quality checks
 docs-generate: ## Generate provider documentation
 	@echo "Generating provider documentation..."
 	@if command -v tfplugindocs >/dev/null 2>&1; then \
-		tfplugindocs generate; \
+		tfplugindocs generate --provider-name=brockhoff; \
 		echo "✓ Documentation generated"; \
 	else \
 		echo "❌ tfplugindocs not found. Install it with: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest"; \
@@ -149,7 +153,7 @@ docs-generate: ## Generate provider documentation
 docs-validate: ## Validate provider documentation
 	@echo "Validating provider documentation..."
 	@if command -v tfplugindocs >/dev/null 2>&1; then \
-		tfplugindocs validate; \
+		tfplugindocs validate --provider-name=brockhoff; \
 		echo "✓ Documentation validated"; \
 	else \
 		echo "❌ tfplugindocs not found. Install it with: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest"; \
