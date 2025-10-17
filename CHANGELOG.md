@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.6](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.5...v0.1.6) (2025-10-17)
+
+
+### Bug Fixes
+
+* correct provider name in docs generation and update settings ([d4c3efb](https://github.com/kbrockhoff/terraform-provider-context/commit/d4c3efbf8f78f41d9ed3396c39a32d2edae2c19a))
+* correct provider name in docs generation and update settings ([f499707](https://github.com/kbrockhoff/terraform-provider-context/commit/f4997076aa3bb624a4d81ad38115316264547685))
+
 ## [0.1.5](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.4...v0.1.5) (2025-10-16)
 
 
