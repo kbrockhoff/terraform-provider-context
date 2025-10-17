@@ -79,10 +79,6 @@ examples/.terraform.lock.hcl
 examples/terraform.tfstate*
 examples/tfplan
 
-# Documentation generation
-docs/data-sources/
-docs/resources/
-docs/index.md
 
 # Generated files
 *_gen.go

@@ -9,7 +9,16 @@
       "mcp__filesystem__move_file",
       "mcp__filesystem__list_directory",
       "Bash(make test:*)",
-      "Bash(TF_CLI_CONFIG_FILE=\"../.terraformrc\" terraform plan)"
+      "Bash(TF_CLI_CONFIG_FILE=\"../.terraformrc\" terraform plan)",
+      "Bash(make generate-docs:*)",
+      "Bash(make docs-generate:*)",
+      "Bash(make docs-validate:*)",
+      "Bash(tfplugindocs:*)",
+      "Bash(mv:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(rm:*)",
+      "Bash(git add:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

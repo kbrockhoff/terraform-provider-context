@@ -54,7 +54,7 @@ install: build ## Install provider locally for development
 	@cp bin/$(BINARY_NAME) $(LOCAL_PROVIDER_DIR)/terraform-provider-context_v$(VERSION)
 	@echo "✓ Provider installed to: $(LOCAL_PROVIDER_DIR)"
 	@echo "Creating .terraformrc from template..."
-	@sed "s|PROVIDER_PATH|$(shell echo $(LOCAL_PROVIDER_DIR) | sed 's|~|$(HOME)|g')|g" .terraformrc.tmpl > $(TF_CLI_CONFIG_FILE)
+	@sed "s|PROVIDER_PATH|$(subst ~,$(HOME),$(LOCAL_PROVIDER_DIR))|g" .terraformrc.tmpl > $(TF_CLI_CONFIG_FILE)
 	@echo "✓ Created $(TF_CLI_CONFIG_FILE)"
 	@echo "✓ You can now use the provider in your Terraform configurations"
 
