@@ -14,11 +14,8 @@
       "Bash(make docs-generate:*)",
       "Bash(make docs-validate:*)",
       "Bash(tfplugindocs:*)",
-      "Bash(mv:*)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "Bash(rm:*)",
-      "Bash(git add:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
