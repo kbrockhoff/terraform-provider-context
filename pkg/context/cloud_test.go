@@ -1,4 +1,4 @@
-package core
+package context
 
 import (
 	"fmt"
@@ -157,27 +157,27 @@ func TestGetCloudProvider(t *testing.T) {
 		{
 			name:     "aws",
 			provider: "aws",
-			wantType: "*core.AWSProvider",
+			wantType: "*context.AWSProvider",
 		},
 		{
 			name:     "azure",
 			provider: "az",
-			wantType: "*core.AzureProvider",
+			wantType: "*context.AzureProvider",
 		},
 		{
 			name:     "gcp",
 			provider: "gcp",
-			wantType: "*core.GCPProvider",
+			wantType: "*context.GCPProvider",
 		},
 		{
 			name:     "default",
 			provider: "dc",
-			wantType: "*core.DefaultProvider",
+			wantType: "*context.DefaultProvider",
 		},
 		{
 			name:     "unknown",
 			provider: "unknown",
-			wantType: "*core.DefaultProvider",
+			wantType: "*context.DefaultProvider",
 		},
 	}
 

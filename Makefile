@@ -86,7 +86,7 @@ test-examples: install ## Test example configurations
 	@for dir in examples/*/; do \
 		if [ -d "$$dir" ]; then \
 			case "$$(basename $$dir)" in \
-				data-sources) \
+				data-sources|client-app) \
 					continue ;; \
 			esac; \
 			echo "Testing $$dir..."; \

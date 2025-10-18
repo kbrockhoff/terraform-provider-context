@@ -32,6 +32,7 @@ resource "aws_s3_bucket" "example" {
 
 ### Optional
 
+- `parent_context` (Object) Parent context values to inherit. Child context can override individual fields. See [parent-child example](https://github.com/kbrockhoff/terraform-provider-context/tree/main/examples/parent-child) for usage.
 - `namespace` (String) Organization or business unit identifier (1-8 chars, lowercase alphanumeric with hyphens)
 - `name` (String) Unique resource name (combined name_prefix must be 2-24 chars)
 - `environment` (String) Environment abbreviation (1-8 chars, lowercase alphanumeric with hyphens)
@@ -74,3 +75,4 @@ resource "aws_s3_bucket" "example" {
 - `data_tags_as_list_of_maps` (List of Map) Data tags formatted for AWS resources
 - `data_tags_as_kvp_list` (List of String) Data tags as key=value pairs
 - `data_tags_as_comma_separated_string` (String) Data tags as comma-separated string
+- `context_output` (Object) Resolved context values that can be used as input for child contexts via `parent_context`
