@@ -251,4 +251,4 @@ data "brockhoff_context" "main" {
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the ASL2 License.
