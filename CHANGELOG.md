@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.6...v0.2.0) (2025-10-18)
+
+
+### Features
+
+* add parent-child context inheritance support ([30ee839](https://github.com/kbrockhoff/terraform-provider-context/commit/30ee83994abd8596fac82d19cc11b63df6813845))
+* expose public API in pkg/context for external Go applications ([42eae3b](https://github.com/kbrockhoff/terraform-provider-context/commit/42eae3bc66c2f568758f18bc796746510d814d84))
+
 ## [0.1.6](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.5...v0.1.6) (2025-10-17)
 
 
