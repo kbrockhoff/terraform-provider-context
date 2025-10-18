@@ -501,7 +501,7 @@ func (d *ContextDataSource) Configure(ctx context.Context, req datasource.Config
 
 // mergeStringValue returns the individual value if set, otherwise the context value
 func mergeStringValue(individualValue, contextValue types.String) string {
-	if !individualValue.IsNull() && individualValue.ValueString() != "" {
+	if !individualValue.IsNull() {
 		return individualValue.ValueString()
 	}
 	if !contextValue.IsNull() {
@@ -538,17 +538,25 @@ func mergeListValue(ctx context.Context, individualValue, contextValue types.Lis
 
 // mergeMapValue returns the individual value if set, otherwise the context value
 func mergeMapValue(ctx context.Context, individualValue, contextValue types.Map) map[string]string {
-	if !individualValue.IsNull() {
-		values := map[string]string{}
-		individualValue.ElementsAs(ctx, &values, false)
-		return values
-	}
+	merged := make(map[string]string)
+
 	if !contextValue.IsNull() {
-		values := map[string]string{}
-		contextValue.ElementsAs(ctx, &values, false)
-		return values
+		parentValues := map[string]string{}
+		contextValue.ElementsAs(ctx, &parentValues, false)
+		for k, v := range parentValues {
+			merged[k] = v
+		}
 	}
-	return make(map[string]string)
+
+	if !individualValue.IsNull() {
+		childValues := map[string]string{}
+		individualValue.ElementsAs(ctx, &childValues, false)
+		for k, v := range childValues {
+			merged[k] = v
+		}
+	}
+
+	return merged
 }
 
 func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -790,69 +798,61 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	// Convert list fields - always initialize with proper type even if empty
-	if len(config.ProductOwners) > 0 {
-		contextOutput.ProductOwners, _ = types.ListValueFrom(ctx, types.StringType, config.ProductOwners)
-	} else {
-		contextOutput.ProductOwners = types.ListNull(types.StringType)
-	}
-	if len(config.CodeOwners) > 0 {
-		contextOutput.CodeOwners, _ = types.ListValueFrom(ctx, types.StringType, config.CodeOwners)
-	} else {
-		contextOutput.CodeOwners = types.ListNull(types.StringType)
-	}
-	if len(config.DataOwners) > 0 {
-		contextOutput.DataOwners, _ = types.ListValueFrom(ctx, types.StringType, config.DataOwners)
-	} else {
-		contextOutput.DataOwners = types.ListNull(types.StringType)
-	}
-	if len(config.DataRegs) > 0 {
-		contextOutput.DataRegs, _ = types.ListValueFrom(ctx, types.StringType, config.DataRegs)
-	} else {
-		contextOutput.DataRegs = types.ListNull(types.StringType)
-	}
+	listVal, diags := types.ListValueFrom(ctx, types.StringType, config.ProductOwners)
+	resp.Diagnostics.Append(diags...)
+	contextOutput.ProductOwners = listVal
+
+	listVal, diags = types.ListValueFrom(ctx, types.StringType, config.CodeOwners)
+	resp.Diagnostics.Append(diags...)
+	contextOutput.CodeOwners = listVal
+
+	listVal, diags = types.ListValueFrom(ctx, types.StringType, config.DataOwners)
+	resp.Diagnostics.Append(diags...)
+	contextOutput.DataOwners = listVal
+
+	listVal, diags = types.ListValueFrom(ctx, types.StringType, config.DataRegs)
+	resp.Diagnostics.Append(diags...)
+	contextOutput.DataRegs = listVal
 
 	// Convert map fields - always initialize with proper type even if empty
-	if len(config.AdditionalTags) > 0 {
-		contextOutput.AdditionalTags, _ = types.MapValueFrom(ctx, types.StringType, config.AdditionalTags)
-	} else {
-		contextOutput.AdditionalTags = types.MapNull(types.StringType)
-	}
-	if len(config.AdditionalDataTags) > 0 {
-		contextOutput.AdditionalDataTags, _ = types.MapValueFrom(ctx, types.StringType, config.AdditionalDataTags)
-	} else {
-		contextOutput.AdditionalDataTags = types.MapNull(types.StringType)
-	}
+	mapVal, diags := types.MapValueFrom(ctx, types.StringType, config.AdditionalTags)
+	resp.Diagnostics.Append(diags...)
+	contextOutput.AdditionalTags = mapVal
+
+	mapVal, diags = types.MapValueFrom(ctx, types.StringType, config.AdditionalDataTags)
+	resp.Diagnostics.Append(diags...)
+	contextOutput.AdditionalDataTags = mapVal
 
 	// Set context_output
 	contextOutputObj, diagsCtx := types.ObjectValueFrom(ctx, map[string]attr.Type{
-		"namespace":                 types.StringType,
-		"environment":               types.StringType,
-		"environment_name":          types.StringType,
-		"environment_type":          types.StringType,
-		"enabled":                   types.BoolType,
-		"availability":              types.StringType,
-		"managedby":                 types.StringType,
-		"deletion_date":             types.StringType,
-		"pm_platform":               types.StringType,
-		"pm_project_code":           types.StringType,
-		"itsm_platform":             types.StringType,
-		"itsm_system_id":            types.StringType,
-		"itsm_component_id":         types.StringType,
-		"itsm_instance_id":          types.StringType,
-		"cost_center":               types.StringType,
-		"product_owners":            types.ListType{ElemType: types.StringType},
-		"code_owners":               types.ListType{ElemType: types.StringType},
-		"data_owners":               types.ListType{ElemType: types.StringType},
-		"sensitivity":               types.StringType,
-		"data_regs":                 types.ListType{ElemType: types.StringType},
-		"security_review":           types.StringType,
-		"privacy_review":            types.StringType,
-		"source_repo_tags_enabled":  types.BoolType,
-		"system_prefixes_enabled":   types.BoolType,
-		"not_applicable_enabled":    types.BoolType,
-		"owner_tags_enabled":        types.BoolType,
-		"additional_tags":           types.MapType{ElemType: types.StringType},
-		"additional_data_tags":      types.MapType{ElemType: types.StringType},
+		"namespace":                types.StringType,
+		"environment":              types.StringType,
+		"environment_name":         types.StringType,
+		"environment_type":         types.StringType,
+		"enabled":                  types.BoolType,
+		"availability":             types.StringType,
+		"managedby":                types.StringType,
+		"deletion_date":            types.StringType,
+		"pm_platform":              types.StringType,
+		"pm_project_code":          types.StringType,
+		"itsm_platform":            types.StringType,
+		"itsm_system_id":           types.StringType,
+		"itsm_component_id":        types.StringType,
+		"itsm_instance_id":         types.StringType,
+		"cost_center":              types.StringType,
+		"product_owners":           types.ListType{ElemType: types.StringType},
+		"code_owners":              types.ListType{ElemType: types.StringType},
+		"data_owners":              types.ListType{ElemType: types.StringType},
+		"sensitivity":              types.StringType,
+		"data_regs":                types.ListType{ElemType: types.StringType},
+		"security_review":          types.StringType,
+		"privacy_review":           types.StringType,
+		"source_repo_tags_enabled": types.BoolType,
+		"system_prefixes_enabled":  types.BoolType,
+		"not_applicable_enabled":   types.BoolType,
+		"owner_tags_enabled":       types.BoolType,
+		"additional_tags":          types.MapType{ElemType: types.StringType},
+		"additional_data_tags":     types.MapType{ElemType: types.StringType},
 	}, contextOutput)
 	resp.Diagnostics.Append(diagsCtx...)
 	data.ContextOutput = contextOutputObj
