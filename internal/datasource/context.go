@@ -82,7 +82,7 @@ type ContextInputModel struct {
 // ContextDataSourceModel describes the data source data model.
 type ContextDataSourceModel struct {
 	// Parent Context Input (optional)
-	Context types.Object `tfsdk:"context"`
+	ParentContext types.Object `tfsdk:"parent_context"`
 
 	// Naming Configuration
 	Namespace       types.String `tfsdk:"namespace"`
@@ -276,8 +276,8 @@ func (d *ContextDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 		Description: "Generates standardized naming conventions and cloud-provider-specific tags for infrastructure resources. Supports parent/child context inheritance.",
 
 		Attributes: map[string]schema.Attribute{
-			// Context Input (optional - for parent context inheritance)
-			"context": schema.SingleNestedAttribute{
+			// Parent Context Input (optional - for parent context inheritance)
+			"parent_context": schema.SingleNestedAttribute{
 				Description: "Parent context values to inherit. Child context can override individual fields.",
 				Optional:    true,
 				Attributes:  getContextAttributes(),
@@ -563,8 +563,8 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	// Extract parent context if provided
 	var parentCtx ContextInputModel
-	if !data.Context.IsNull() {
-		diag := data.Context.As(ctx, &parentCtx, basetypes.ObjectAsOptions{})
+	if !data.ParentContext.IsNull() {
+		diag := data.ParentContext.As(ctx, &parentCtx, basetypes.ObjectAsOptions{})
 		resp.Diagnostics.Append(diag...)
 		if resp.Diagnostics.HasError() {
 			return

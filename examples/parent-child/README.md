@@ -49,7 +49,7 @@ Child contexts inherit from the parent and override specific fields:
 ```hcl
 data "brockhoff_context" "api" {
   # Inherit parent values
-  context = data.brockhoff_context.parent.context_output
+  parent_context = data.brockhoff_context.parent.context_output
 
   # Override only what's different
   name = "payment-api"
@@ -63,7 +63,7 @@ data "brockhoff_context" "api" {
 
 Values are resolved in this order:
 1. **Defaults**: Built-in defaults (e.g., availability = "preemptable")
-2. **Parent Context**: Values from `context` input
+2. **Parent Context**: Values from `parent_context` input
 3. **Individual Inputs**: Explicitly set values (highest priority)
 
 Example:

@@ -45,7 +45,7 @@ data "brockhoff_context" "parent" {
 # Inherits all parent settings but overrides name and adds component-specific tags
 data "brockhoff_context" "api" {
   # Use parent context as base
-  context = data.brockhoff_context.parent.context_output
+  parent_context = data.brockhoff_context.parent.context_output
 
   # Override only what's different for this component
   name = "payment-api"
@@ -65,7 +65,7 @@ data "brockhoff_context" "api" {
 # Inherits from parent, different name and component tags
 data "brockhoff_context" "database" {
   # Use parent context as base
-  context = data.brockhoff_context.parent.context_output
+  parent_context = data.brockhoff_context.parent.context_output
 
   # Override for this component
   name = "payment-db"
@@ -90,7 +90,7 @@ data "brockhoff_context" "database" {
 # Child context for cache component
 data "brockhoff_context" "cache" {
   # Use parent context as base
-  context = data.brockhoff_context.parent.context_output
+  parent_context = data.brockhoff_context.parent.context_output
 
   # Override for this component
   name = "payment-cache"
