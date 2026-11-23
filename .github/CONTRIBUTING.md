@@ -30,7 +30,7 @@ This project follows a standard Code of Conduct. By participating, you are expec
 
 ### Prerequisites
 
-- **Go**: Version 1.21 or later
+- **Go**: Version 1.27 or later
 - **Terraform**: Latest version for testing
 - **Git**: For version control
 - **Make**: For running development tasks
