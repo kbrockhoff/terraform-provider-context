@@ -92,3 +92,6 @@ examples/tfplan
 
 # Claude Code personal settings
 .claude/settings.local.json
+
+# Example client build output
+examples/client-app/example-client-app
