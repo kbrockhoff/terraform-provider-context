@@ -1,6 +1,6 @@
 module github.com/kbrockhoff/terraform-provider-context
 
-go 1.25.1
+go 1.27.0
 
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.19.0

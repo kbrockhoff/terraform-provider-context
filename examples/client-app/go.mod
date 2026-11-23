@@ -1,6 +1,6 @@
 module example-client-app
 
-go 1.25.1
+go 1.27.0
 
 require github.com/kbrockhoff/terraform-provider-context v0.0.0
 
