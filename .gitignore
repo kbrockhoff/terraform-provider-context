@@ -89,3 +89,6 @@ examples/tfplan
 .beads-credential-key
 .beads/proxieddb/
 *.gate.lock*
+
+# Claude Code personal settings
+.claude/settings.local.json
