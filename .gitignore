@@ -82,3 +82,13 @@ examples/tfplan
 
 # Generated files
 *_gen.go
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*
+
+# Claude Code personal settings
+.claude/settings.local.json
