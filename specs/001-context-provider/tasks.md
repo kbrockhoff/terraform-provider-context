@@ -123,6 +123,13 @@ a deletion date. Phase 3 depends on all three.
 - [ ] T010 [P] In `pkg/context/validation.go`, make `ValidateDeletionDate` accept the literal
   `never`. Add the cases `"never"` (valid), `"Never"` (invalid) and `"2025-02-30"` (invalid)
   to `pkg/context/validation_test.go`. This covers C2.
+- [ ] T048 In `pkg/context/validation.go`, add
+  `func ValidateDataSovereignty(value string) error`. It returns `nil` for `""` (not supplied)
+  and returns an error naming the field when `strings.TrimSpace(value) == ""`. Do not validate
+  ISO 3166 formats: the value is free text. Add the cases `""` (valid), `"US-CA"` (valid),
+  `"DE"` (valid), `"Quebec"` (valid) and `"   "` (invalid) to
+  `pkg/context/validation_test.go`. Run this after T010, because both edit the same files. This
+  covers C17 and FR-009/FR-028.
 - [ ] T011 Foundation checkpoint: run `go test -race -run 'Git|Validate' ./pkg/context/...`
   and `go vet ./pkg/...`.
 
@@ -221,11 +228,25 @@ T013–T021 all edit `tags.go`, so they run sequentially.
 - [ ] T021 Update the existing cases in `pkg/context/tags_test.go` that assumed N/A for absent
   PM/ITSM ids, N/A environment or N/A deletion date. Set `GitInfoFunc` stubs in every
   `TagProcessor` test so that no test runs real git. The tests from T012 must now pass.
+- [ ] T049 In `pkg/context/tags.go`, add the `DataSovereignty string` field to
+  `DataSourceConfig`, under Data Classification. In `ProcessDataTags()`, set
+  `tags["sovereignty"] = DataSovereignty` only when it is non-empty: use no `addOptionalTag`
+  and no N/A path. Never add it in `Process()`. Add cases to
+  `pkg/context/tags_parity_test.go`:
+  - `"US-CA"` on `aws` gives `bc-sovereignty=US-CA` in the data tags and no such key in the
+    resource tags;
+  - `"US-CA"` on `gcp` gives `us-ca`;
+  - empty with N/A on gives no `bc-sovereignty` key on any of the 4 clouds.
+
+  This covers C17, FR-019 and FR-028.
 - [ ] T022 [P] In `internal/core/tags.go`, add the re-exports
   `func ResolveDeletionDate(config *DataSourceConfig)` and
   `func EffectiveEnvironmentName(config *DataSourceConfig) string`, which delegate to
   `pkg/context`. Mark `ProcessEphemeralEnvironment` deprecated in its doc comment. Add no
   logic. This covers C15 and FR-025.
+- [ ] T050 [P] In `internal/core/validation.go`, add the re-export
+  `func ValidateDataSovereignty(value string) error`, which delegates to `pkg/context`. Add no
+  logic. This covers C17 and FR-025.
 - [ ] T023 [P] Create `pkg/context/bench_test.go` with two benchmarks:
   - `BenchmarkTagProcessorProcess`: every `DataSourceConfig` field populated, three owners,
     five additional tags, the `aws` provider, and `GitInfoFunc` returning a fixed
@@ -291,6 +312,22 @@ diagnostics and warnings.
     and `propagate_at_launch`.
 
   This covers C14 and FR-027.
+- [ ] T051 In `internal/datasource/context.go`, add the optional string attribute
+  `data_sovereignty`:
+  - Add it to `Schema()` and `getContextAttributes()`, so it appears in `parent_context` and
+    `context_output`. Description: "Jurisdiction governing where the data may be stored and
+    processed. By convention an ISO 3166-1 country code (e.g. DE) or ISO 3166-2 subdivision
+    code (e.g. US-CA); free text, not validated against ISO. Emitted as the sovereignty data
+    tag only when set."
+  - Add `DataSovereignty types.String` with tag `tfsdk:"data_sovereignty"` to
+    `ContextDataSourceModel` and `ContextInputModel`.
+  - In `Read`, set `DataSovereignty: mergeStringValue(data.DataSovereignty, parentCtx.DataSovereignty)`.
+  - Validate with `core.ValidateDataSovereignty` and report failures with
+    `AddAttributeError(path.Root("data_sovereignty"), "Invalid data_sovereignty", …)`.
+  - Populate `context_output.data_sovereignty`, and add `"data_sovereignty": types.StringType`
+    to the `context_output` attribute type map.
+
+  Run this after T030. This covers C17, FR-004, FR-005, FR-006 and FR-028.
 - [ ] T031 [P] Create `internal/datasource/context_test.go` with unit tests:
   - `mergeStringValue`, `mergeBoolValue`, `mergeListValue` and `mergeMapValue`: child set,
     parent only, neither, and a map merge where the child key wins;
@@ -356,6 +393,18 @@ diagnostics and warnings.
   - sanitization of `additional_tags = { note = "a<b>&c?d/e#f:g" }`;
   - truncation of a 300-character value to 256 for aws/az and 63 for gcp/dc;
   - lowercase values on `gcp`.
+- [ ] T052 [P] Create `internal/provider/datasource_context_sovereignty_acc_test.go`:
+  - `data_sovereignty = "US-CA"` on `aws` gives `data_tags.bc-sovereignty = US-CA`, and
+    `tags` has no `bc-sovereignty` key;
+  - the same on `gcp` gives `us-ca`;
+  - with `data_sovereignty` unset and `not_applicable_enabled = true`, the
+    `data_tags.bc-sovereignty` key is absent;
+  - a parent with `data_sovereignty = "CA-QC"` and a child without it gives the child
+    `bc-sovereignty = CA-QC` and `context_output.data_sovereignty = CA-QC`;
+  - `data_sovereignty = "   "` gives `ExpectError` matching `data_sovereignty`;
+  - a final `PlanOnly` step expects an empty plan.
+
+  This covers FR-028.
 - [ ] T037 [P] Update `examples/parent-child/README.md` and `examples/parent-child/main.tf`
   comments to state that `name` is never inherited, and that `environment_name` falls back to
   `dev` in `context_output` while `environment` does not.
@@ -389,6 +438,9 @@ beads, and run the final gates.
   - document `deletion_date` defaults (`never`, Ephemeral + 90 days);
   - list the generated tag keys and when each is emitted, per FR-013 to FR-020;
   - show `propagate_at_launch` in the list-of-maps description;
+  - document `data_sovereignty` under data classification: it is optional, it emits the
+    `sovereignty` data tag only when set, and the ISO 3166-1/3166-2 convention is not
+    validated;
   - add a short "Upgrade notes" section that lists the tag values changed by gaps 2–6.
 
   This covers bead `tfpctx-am0`.
@@ -398,6 +450,8 @@ beads, and run the final gates.
     `never`;
   - list the actual tag keys (`projectmgmtid`, `systemid`, `componentid`, `instanceid`);
   - document the N/A scope, the `dataowners` gating and `propagate_at_launch`;
+  - add `data_sovereignty` and its `sovereignty` data tag, which is emitted only when set and
+    is never N/A;
   - add a pointer to `specs/001-context-provider/spec.md` and
     `.specify/memory/principles.md`.
 
@@ -412,7 +466,8 @@ beads, and run the final gates.
 
   This covers bead `tfpctx-6he`.
 - [ ] T044 [P] Update `pkg/context/README.md` to document `ResolveDeletionDate`,
-  `EffectiveEnvironmentName`, `TagProcessor.GitInfoFunc`, `TagProcessor.Warnings`, the
+  `EffectiveEnvironmentName`, `ValidateDataSovereignty`, `DataSourceConfig.DataSovereignty`,
+  `TagProcessor.GitInfoFunc`, `TagProcessor.Warnings`, the
   deprecated `ProcessEphemeralEnvironment`, key validation errors and the
   `propagate_at_launch` entry.
 - [ ] T045 Final validation:
@@ -464,6 +519,7 @@ beads, and run the final gates.
 | FR-024/025 | T022, T024 | T024 (client-app builds) |
 | FR-026 | T037, T038, T040–T044 | T045 docs-validate, test-examples |
 | FR-027 | T030, T040–T042 | T045 docs-validate |
+| FR-028 | T048, T049, T050, T051, T041, T042, T044 | T048 tests, T049 tests, T052 |
 | Perf / scalability NFR | T008, T023 | T009, T023 |
 | Release / supply chain | T002–T004 | T045 release-snapshot |
 
@@ -487,17 +543,24 @@ Phase 1 Setup ──► Phase 2 Foundation ──► Phase 3 Library ──► P
 ### Sequential Chains Within Phases
 
 - T006 → T007 → T008 → T009 (all edit `git.go` and `git_test.go`)
-- T012 → T013 → … → T021 (all edit `tags.go`, plus `tags_test.go` or `tags_parity_test.go`)
-- T027 → T028 → T029 → T030 (all edit `internal/datasource/context.go`)
-- T033 before T034–T036 (they share the provider factories)
+- T010 → T048 (both edit `validation.go` and `validation_test.go`)
+- T012 → T013 → … → T021 → T049 (all edit `tags.go`, plus `tags_test.go` or
+  `tags_parity_test.go`)
+- T027 → T028 → T029 → T030 → T051 (all edit `internal/datasource/context.go`)
+- T033 before T034–T036 and T052 (they share the provider factories)
+
+Task IDs T048–T052 were added for FR-028 after the beads were created. They keep their own
+IDs, instead of renumbering, so that the existing beads still match their tasks. Within each
+phase, execution order follows the position in the list, not the ID.
 
 ### Parallel Opportunities
 
 - **Phase 1**: T002, T003 and T004 (three different files), after T001.
 - **Phase 2**: T010 (validation files) alongside the T006–T009 chain.
-- **Phase 3**: T022, T023 and T024 after T021 (core aliases, benchmark file, client app).
-- **Phase 4**: T026 (provider) and T031 (new test file) alongside the T027–T030 chain.
-- **Phase 5**: T034, T035, T036, T037 and T038 after T033.
+- **Phase 3**: T022, T050, T023 and T024 after T049 (core tag aliases, core validation alias,
+  benchmark file, client app).
+- **Phase 4**: T026 (provider) and T031 (new test file) alongside the T027–T030 → T051 chain.
+- **Phase 5**: T034, T035, T036, T052, T037 and T038 after T033.
 - **Phase 6**: T041, T042, T043 and T044 alongside T040.
 
 Example, Phase 5 after T033:

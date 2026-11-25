@@ -33,11 +33,13 @@ the gaps between the spec and the existing code. The gaps fall into these groups
    - truncate values without splitting characters;
    - enforce tag key rules;
    - report errors against the attribute that caused them.
-3. **Test coverage**:
+3. **New capability (FR-028)**: an optional data sovereignty input, emitted as the
+   `sovereignty` data tag only when it is supplied.
+4. **Test coverage**:
    - acceptance tests and data source tests, which do not exist today;
    - a benchmark;
    - a test that the git cache works under concurrent use.
-4. **Documentation and CI hygiene**:
+5. **Documentation and CI hygiene**:
    - environment type documentation;
    - migration notes for gap 1;
    - pinned tool versions in CI.
@@ -109,7 +111,7 @@ Gates come from `.specify/memory/principles.md` v1.0.0.
 | Abstract Cloud Differences Behind One Contract | ✅ | All rules stay behind the `CloudProvider` interface. Key validation (`ValidateTagKey`) is now actually called. Rune-safe truncation lives in shared code, not in each cloud implementation. |
 | Make Every Resource Identifiable and Accountable | ✅ | `environment`, `availability`, `managedby` and `deletiondate` are always emitted. N/A rules are limited to the seven tags in FR-020. Name prefix rules are unchanged. |
 | Protect Information Exposed Through Tags | ✅ after fix | `sourcerepo` is rebuilt from a parsed URL with userinfo removed (bead `tfpctx-6ce`). Additional-tag keys are validated and all values sanitized. |
-| Preserve Consumer Compatibility | ✅ | Gaps 2–6 move outputs to match the legacy module. Gap 1 and name non-inheritance are documented divergences with migration notes. The output changes ship together as one MINOR release with per-tag changelog entries. Library API changes are additive only. |
+| Preserve Consumer Compatibility | ✅ | Gaps 2–6 move outputs to match the legacy module. Gap 1 and name non-inheritance are documented divergences with migration notes. The sovereignty addition (C17) is opt-in, so contexts that do not set it are unchanged. The output changes ship together as one MINOR release with per-tag changelog entries. Library API changes are additive only. |
 | Keep Business Logic in the Reusable Library | ✅ | All behavior changes land in `pkg/context`. The data source only maps types, reports diagnostics and logs warnings. The provider's duplicate cloud list is replaced with `ValidateCloudProvider`. `internal/core` only gets new aliases. |
 | Validate Early and Fail Clearly | ✅ | Diagnostics move to `AddAttributeError` with attribute paths. Bad tag keys and bad prefixes fail the read. Missing git information only produces a `tflog.Warn`. |
 | Test the Contract, Not the Implementation | ✅ after tasks | Acceptance tests are added (bead `tfpctx-24o`). Every FR-009 to FR-023 rule gets a test case, with a traceability table in tasks. The `pkg/context` coverage gate is ≥ 90%. |
@@ -166,6 +168,7 @@ Read pipeline, in order (unchanged except where marked ★):
 | C13 | FR-001 | `internal/provider/provider.go` | Replace the inline allowed-cloud map with `ctx.ValidateCloudProvider`. |
 | C14 | FR-027 | `internal/datasource/context.go` | Expand the `environment_type` description with its purpose and the RPO/RTO table. Keep it out of naming in the README and agents guide (bead `tfpctx-am0`). |
 | C15 | FR-024, FR-025 | `internal/core/*.go` | Add aliases for `ResolveDeletionDate`. No logic. |
+| C17 | FR-004, FR-009, FR-019, FR-028 | `pkg/context/validation.go`, `pkg/context/tags.go`, `internal/core`, `internal/datasource/context.go` | Add the data sovereignty input. The library gets `DataSourceConfig.DataSovereignty` and `ValidateDataSovereignty`, which rejects empty or whitespace-only values and nothing else; ISO 3166-1/3166-2 is a documented convention only. `ProcessDataTags()` emits `sovereignty` only when the value is non-empty, with no N/A path, and never in resource tags. The data source gets the optional `data_sovereignty` attribute at the top level and in `parent_context` and `context_output`, merged with `mergeStringValue`. This addition is new and has no counterpart in the legacy module. |
 | C16 | FR-026 | `docs/`, `README.md`, `examples/`, `docs/design.md` | Regenerate docs. Update the tag tables and the deletion date description. Add migration notes covering gap 1 and the non-inheritance of `name`. Fix the `design.md` layout (bead `tfpctx-6he`). Fix the AGENTS claim that Ephemeral overrides an explicit date. |
 
 ### Compute Resources
@@ -305,13 +308,13 @@ specs/001-context-provider/
 │   │   ├── provider_test.go        # NEW: schema/config unit tests, ProtoV6 factories
 │   │   └── datasource_acc_test.go  # NEW: acceptance tests (TF_ACC), plan-stability steps
 │   ├── datasource/
-│   │   ├── context.go              # C11, C12, C14
+│   │   ├── context.go              # C11, C12, C14, C17
 │   │   └── context_test.go         # NEW: merge helpers, context_output mapping
 │   └── core/                       # Aliases only (C15)
 ├── pkg/context/
 │   ├── naming.go                   # Unchanged (gap 1 kept)
-│   ├── validation.go               # C2
-│   ├── tags.go                     # C1, C3–C5, C7–C10
+│   ├── validation.go               # C2, C17
+│   ├── tags.go                     # C1, C3–C5, C7–C10, C17
 │   ├── cloud.go                    # Unchanged interface; ValidateTagKey now used
 │   ├── git.go                      # C6, gitCommand seam
 │   ├── *_test.go                   # Extended: parity, security, rune, concurrency

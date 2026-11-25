@@ -92,8 +92,8 @@ change or scheduled for correction.
   - **Project management**: project management platform and project code.
   - **ITSM**: ITSM platform, and system, component and instance identifiers.
   - **Ownership**: cost center, and product, code and data owner lists.
-  - **Classification**: sensitivity, data regulations list, security review and privacy
-    review.
+  - **Classification**: sensitivity, data regulations list, data sovereignty jurisdiction
+    (FR-028), security review and privacy review.
   - **Feature toggles**: source-repository tags, system prefixes, not-applicable
     substitution, owner tags.
   - **Extra tags**: additional tag maps for resource tags and for data tags.
@@ -149,6 +149,7 @@ change or scheduled for correction.
   - **sensitivity**: one of `public`, `internal`, `confidential`, `restricted`, `critical`.
   - **deletion date**: a real calendar date in `YYYY-MM-DD` form.
   - **owner lists**: every entry is a syntactically valid email address.
+  - **data sovereignty**: when supplied, not empty and not only whitespace.
 
 #### Name prefix
 
@@ -223,8 +224,21 @@ change or scheduled for correction.
 #### Data tags
 
 - **FR-019**: Data tags MUST contain `sensitivity`, `dataregulations` (joined with the target
-  delimiter) and `dataowners` (per FR-015), followed by the merged additional data tags. All of
-  these are prefixed per FR-002.
+  delimiter), `dataowners` (per FR-015) and, when supplied, `sovereignty` (per FR-028),
+  followed by the merged additional data tags. All of these are prefixed per FR-002.
+- **FR-028**: The data source MUST accept an optional data sovereignty input. Its value is the
+  jurisdiction whose laws govern where the data may be stored and processed. By convention it
+  is an ISO 3166-1 country code such as `DE` or an ISO 3166-2 subdivision code such as
+  `US-CA`. The value is free text and the convention is not validated. The input is
+  inherited from the parent context like every other scalar input (FR-005) and is carried in the
+  resolved context (FR-006).
+  - When a value is supplied, after inheritance, it MUST be emitted as the data tag
+    `sovereignty`. It MUST NOT be emitted as a resource tag.
+  - When no value is supplied, the `sovereignty` tag MUST be omitted. It is never substituted
+    with the N/A value, whatever the not-applicable setting (FR-020).
+  - A supplied value that is empty or only whitespace MUST be rejected (FR-009).
+  - The value is normalized and truncated for the target cloud like any other tag value
+    (FR-021).
 
 #### Missing values and cloud formatting
 
@@ -232,8 +246,8 @@ change or scheduled for correction.
   `productowners`, `codeowners`, `securityreview`, `privacyreview`, `dataregulations` and
   `dataowners`. Owner tags additionally require owner tags to be enabled. When substitution is
   enabled, an absent value in one of these tags MUST be emitted as the target cloud's N/A value.
-  When substitution is disabled, the tag MUST be omitted. All other tags follow FR-013, FR-014
-  and FR-017.
+  When substitution is disabled, the tag MUST be omitted. All other tags follow FR-013, FR-014,
+  FR-017 and FR-028.
 - **FR-021**: Every resource and data tag value, including additional tags, MUST be
   normalized for the target cloud and then truncated to that cloud's maximum length, as shown
   in the table below. Truncation MUST NOT split a multi-byte character.
@@ -338,8 +352,9 @@ change or scheduled for correction.
 ### Regulatory Frameworks
 
 The provider is not subject to a regulatory framework itself. It is a classification enabler:
-the sensitivity and data regulation tags let consumers meet their own obligations, such as
-GDPR or CCPA, which consumers declare as input values. Provider registry publishing
+the sensitivity, data regulation and data sovereignty tags let consumers meet their own
+obligations, such as GDPR or CCPA, or data residency rules, which consumers declare as input
+values. Provider registry publishing
 requirements are mandatory:
 
 - signed releases;
@@ -400,6 +415,10 @@ requirements are mandatory:
 - The 50 ms evaluation target is a new budget. The current code has no measured baseline; the
   only reference is the pure in-memory computation it performs. The 15-minute pipeline
   target matches the existing CI job timeout.
+- The data sovereignty value is free text naming a jurisdiction. The recommended convention is
+  an ISO 3166-1 country code (`DE`, `CA`) or an ISO 3166-2 subdivision code (`US-CA`,
+  `CA-QC`). This convention is not enforced: validation only rejects empty or whitespace-only
+  values (FR-009).
 - One specification covers the whole provider. It can be split later, for example into naming,
   tagging and inheritance specs, if planning shows that is useful.
 
@@ -441,6 +460,12 @@ gaps 2–6.
 
 Gaps 2–6 change the provider's current outputs. Ship them as one MINOR release and list each
 changed tag in the changelog.
+
+### Additions beyond the legacy module
+
+- FR-028 (data sovereignty): a new optional input and data tag added on 2026-11-25. It has no
+  counterpart in the legacy module or the current code. It is additive, so it ships as a MINOR
+  release, and contexts that do not set it produce unchanged outputs.
 
 ### Code defects found (spec-conformance work)
 
