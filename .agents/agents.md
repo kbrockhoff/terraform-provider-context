@@ -1,267 +1,246 @@
-# CLOUD XXX Terraform Module Guide for AI Agents
+# Context Terraform Provider
 
-What the goal of this module is.
+> **Authoritative sources**: behavior is specified in `specs/001-context-provider/spec.md`
+> (FR-001 to FR-028) and governed by `.specify/memory/principles.md`. When this guide and the
+> spec disagree, the spec wins.
 
-## Components
+## Overview
 
-### Component 1
-- Requirement
-- Requirement
+This Terraform provider replicates the functionality of the `kbrockhoff/terraform-external-context` module. The provider should generate the same three primary outputs: `name_prefix`, `tags`, and `data_tags` while providing a more native Terraform experience.
 
-### Component 2
-- Requirement
-- Requirement
+## Provider Schema Requirements
 
+### Provider Configuration
 
-## Terraform Module Guide
+The provider should accept only the following configuration attributes for global cloud-specific settings:
 
-### Core Principles
+- `cloud_provider` (string, optional) - Cloud provider identifier: `dc`, `aws`, `az`, `gcp`, `oci`, `ibm`, `do`, `vul`, `ali`, `cv`
+- `tag_prefix` (string, optional, default: "bc-") - Prefix for all generated tags
 
-* **One Responsibility:** Each module should have a single, clear purpose.
-* **Composition over Configuration:** Build focused modules that work together, not all-in-one solutions.
-* **Minimal, Predictable Interfaces:** Expose only essential variables and outputs. Avoid leaking implementation details.
-* **Fail Fast:** Validate inputs and stop early on errors.
-* **Clear Documentation:** Explain purpose, usage, and design decisions.
+## Data Source Requirements
 
-### Module Design
+### Context Data Source
 
-**Good Examples:**
+The `context` data source contains all configuration fields and provides the computed outputs:
 
 ```hcl
-# Single-purpose modules
-module "vpc" { source = "./modules/vpc" name = var.name cidr_block = var.cidr }
-module "db" { source = "./modules/rds" name = "${var.name}-db" subnets = module.vpc.db_subnets }
-```
+provider "brockhoff" {
+  cloud_provider = "aws"
+  tag_prefix     = "bc-"
+}
 
-**Avoid:**
-
-```hcl
-module "monolith" { create_vpc = true; create_db = true; create_lb = true; ... }
-```
-
-### Interfaces
-
-* **Inputs:** Only what's needed; group related config in objects; use sensible defaults and validation.
-* **Feature Flags:** Use booleans for optional resources.
-* **Outputs:** Only what's useful for composition—IDs, endpoints, etc.
-  *Don’t expose internal resource details.*
-
-### Patterns
-
-* **Consistent Naming & Tagging:** Use predictable names and common tags.
-* **Version Pinning:** Lock Terraform and provider versions in `versions.tf`.
-* **Centralize Data Sources:** Place all external data lookups in one file and pass results to submodules.
-
-### File Structure
-
-```
-/main.tf           # Core logic
-/variables.tf      # Inputs
-/outputs.tf        # Outputs
-/locals.tf         # Computed values
-/versions.tf       # Version constraints
-/dependencies.tf   # Data sources
-/examples/         # Usage demos
-/modules/          # Optional submodules
-/test/             # Automated tests
-```
-
-### AWS Best Practices
-
-* Use `aws_iam_policy_document` instead of inline JSON for policies.
-* Default to encryption with customer-managed KMS.
-* Create log groups explicitly.
-
-### CI/CD Deployer Permissions
-
-* `modules/deployer` creates least privilege IAM managed policies for CI/CD to plan, apply and destroy this module.
-* Attach them to the role from `terraform-aws-cicdrole` via `iam_role_name = module.<cicdrole>.role_name`; leave it empty to only create policies.
-* The role, OIDC trust and Terraform state backend access belong to cicdrole — never add them to the deployer.
-* Keep the deployer in sync whenever resources are added or changed in this module.
-* Inputs: `enabled`, `name_prefix`, `iam_role_name`, `tags`, `partition`, `region`, `account_id`. Outputs: `policy_arns`, `policy_names` (maps keyed by policy purpose).
-
-### Avoid
-
-* **God Modules:** Don’t build modules that do everything.
-* **Too Many Inputs:** Limit options; use environment-based defaults.
-* **Implicit Dependencies:** Accept IDs as inputs, not naming assumptions.
-* **Tight Coupling:** Modules shouldn’t assume other modules’ structure.
-
-### Documentation & Testing
-
-* Provide clear examples and rationale in `README.md`.
-* Use `terraform-docs` for reference docs.
-* Ensure modules are easily testable (`terraform plan` with example configs).
-
-### Release & CI/CD
-
-* Tag releases on `main` with semantic versioning.
-* Use GitHub Actions (or similar) to run format, validate, and test steps automatically.
-
-### AI Agent Checklist
-
-* [ ] Single responsibility & clear purpose
-* [ ] Minimal, validated inputs and meaningful outputs
-* [ ] Predictable naming/tagging
-* [ ] Centralized external dependencies
-* [ ] Example configs and docs provided
-* [ ] Tested for `plan` success and edge cases
-
----
-
-**Summary:**
-Favor small, focused modules with clear interfaces and strong defaults. Compose modules for complex scenarios. Document intent and usage. Avoid monolithic, over-configured designs. **Simplicity and clarity beat feature-completeness.**
-
-## Terraform Style Guide
-
-*Based on the [Gruntwork](https://docs.gruntwork.io/guides/style/terraform-style-guide/) and [HashiCorp](https://developer.hashicorp.com/terraform/language/style) guides. Focus: simple, reasoning-friendly infrastructure.*
-
-### Core Principles
-
-* **Choose simple over easy:** Each component should have one clear responsibility; prefer clarity over shortcuts.
-* **Explicit over implicit:** Make all dependencies and resource relationships obvious.
-* **Localize change:** Changes should not require understanding distant code.
-* **Composition over configuration:** Build small, independent modules with clear interfaces and minimal assumptions.
-
-### Understanding Terraform Behavior
-
-* Be able to answer:
-
-  * What will be created?
-  * In what order?
-  * What changes if a variable changes?
-  * What external dependencies exist?
-* Make dependencies explicit (avoid hidden dependencies through naming/data sources).
-* Ensure changes to variables affect only what is expected.
-
-### Design Patterns
-
-* **Module boundaries:** Each module should have a single reason to change (e.g., VPC, compute).
-* **Interface design:** Use variables/outputs to define clear, minimal contracts.
-* **Data flow:** Ensure values flow in one direction and are derived in locals when needed.
-
-### Syntax and Style
-
-* **Formatting:** Enforced by `terraform fmt` (2-space indent, 120-char lines, blank lines between resources, trailing newline).
-* **Naming:** Use `snake_case` and descriptive names with consistent prefixes.
-* **Comments:** Use `#` for comments, `----` for section headers, and always explain non-obvious code.
-* **Variables:** Always provide descriptions and types; prefer explicit objects over free-form maps; add validation as needed.
-
-### Avoiding Complexity
-
-* **No implicit dependencies:** Reference resources directly, not by naming convention.
-* **Avoid nested conditionals:** Use locals to simplify boolean logic.
-* **No magic values:** Use variables and data sources, not hardcoded strings or numbers.
-* **Single-purpose modules:** Avoid modules overloaded with flags for optional features.
-
-### AI Agent Guidelines
-
-* **Prioritize:** Reasoning clarity, localized change, explicit dependencies, clean interfaces, correct syntax.
-* **Generate self-explanatory code:** Comment rationale for settings and explain resource decisions.
-* **When refactoring:** Preserve behavior, extract complexity to locals, make dependencies explicit, and clarify logic.
-* **Testing:** Verify behavioral correctness, dependency resolution, and predictable change impact.
-
----
-
-**Remember:** Simple code enables reliable change and long-term maintainability.
-
-
-## Terraform Test Guide
-
-### Testing Philosophy
-
-* **Test the module contract**: Focus on configuration, planning, outputs, and edge cases—not cloud provider itself.
-* **Simple over comprehensive**: One concern per test; avoid brittle “cover everything” tests.
-* **Plan-only preferred**: Validate `terraform plan` outputs, not real cloud provider state (avoid unnecessary costs).
-
-### Test Design
-
-* **Single responsibility**: One aspect per test (e.g., defaults, feature flags).
-* **Clear failures**: Assertions should explain what’s wrong.
-* **Test independence**: Use unique names and don’t share state.
-* **Focus on essentials**: Test desired behaviors, not implementation details.
-
-### Repository Organization
-
-* **modules/**: Terraform modules
-* **examples/**: Minimal (`defaults/`), full (`complete/`) and other common usage examples
-* **test/**: Terratest Go tests for examples
-
-Each example needs: `main.tf`, `variables.tf`, `outputs.tf`, `versions.tf`, `terraform.auto.tfvars`, `README.md`
-
-### Test Implementation Pattern
-
-* Use a unique name per test run
-* Use `terraform.Plan` for validation
-* Use clear, scenario-specific test names
-* Organize with shared utilities in `test/shared_test.go`
-
-**Test template:**
-
-```go
-func TestModuleExample(t *testing.T) {
-    t.Parallel()
-    testID := fmt.Sprintf("test-%d", time.Now().Unix())
-    terraformOptions := &terraform.Options{
-        TerraformDir: "../examples/defaults",
-        Vars: map[string]interface{}{"name": testID},
-        RetryableTerraformErrors: getRetryableErrors(),
-        MaxRetries: 3,
-        TimeBetweenRetries: 5 * time.Second,
-    }
-    defer terraform.Destroy(t, terraformOptions)
-    terraform.Init(t, terraformOptions)
-    planOutput := terraform.Plan(t, terraformOptions)
-    assert.Contains(t, planOutput, "module.main.aws_kms_key.main[0]")
+data "brockhoff_context" "main" {
+  # Naming Configuration
+  namespace       = "myorg"
+  name            = "myapp"
+  environment     = "prod"
+  environment_name = "Production"
+  environment_type = "Production"
+  
+  # Resource Management
+  enabled        = true
+  availability   = "preemptable"
+  managedby      = "terraform"
+  deletion_date  = "2024-12-31"
+  
+  # ... other attributes
 }
 ```
 
-**Shared helpers:**
+#### Data Source Configuration Attributes
 
-```go
-func generateTestName(prefix string) string { /* unique Brockhoff Terrafom module names */ }
-func getBaseTerraformOptions(dir string) *terraform.Options { /* common options */ }
-func getRetryableErrors() map[string]string { /* retry logic for transient errors */ }
-```
+##### Naming Configuration
+- `namespace` (string, optional) - Organization or business unit identifier (1-8 chars, lowercase alphanumeric with hyphens)
+- `name` (string, optional) - Unique resource name (combined name_prefix must be 2-24 chars)
+- `environment` (string, optional) - Environment abbreviation (1-8 chars, lowercase alphanumeric with hyphens)
+- `environment_name` (string, optional) - Full environment name; the `environment` tag falls back to `environment`, then `dev`
 
-### Test Types
+##### Environment Classification
+- `environment_type` (string, optional) - One of: None, Ephemeral, Development, Testing, UAT, Production, MissionCritical.
+  Classifies the deployment stage so consuming configurations can choose resiliency (RPO/RTO) and cost defaults.
+  Not a naming input: it never affects `name_prefix` and is not emitted as a tag. Only `Ephemeral` changes
+  outputs (deletion date). See spec FR-027 for the RPO/RTO table.
 
-* **Configuration validation**: Plan succeeds, expected resources created.
-* **Feature flag**: Feature is present/absent based on input.
-* **Input validation**: Bad inputs fail early.
+##### Resource Management
+- `enabled` (bool, optional, default: true) - Enable/disable resource creation
+- `availability` (string, optional, default: "preemptable") - Availability requirement from predefined list
+- `managedby` (string, optional, default: "terraform") - Management platform identifier
+- `deletion_date` (string, optional) - Resource deletion date (YYYY-MM-DD format) or `never`
+
+##### Project Management Integration
+- `pm_platform` (string, optional) - Project management platform (e.g., JIRA, SNOW)
+- `pm_project_code` (string, optional) - Project code/prefix
+
+##### ITSM Integration
+- `itsm_platform` (string, optional) - IT Service Management platform
+- `itsm_system_id` (string, optional) - ITSM system identifier
+- `itsm_component_id` (string, optional) - ITSM component identifier
+- `itsm_instance_id` (string, optional) - ITSM instance identifier
+
+##### Ownership and Billing
+- `cost_center` (string, optional) - Cost center for billing
+- `product_owners` (list(string), optional) - Product owner email addresses
+- `code_owners` (list(string), optional) - Code owner email addresses
+- `data_owners` (list(string), optional) - Data owner email addresses
+
+##### Data Classification
+- `sensitivity` (string, optional, default: "confidential") - Data sensitivity level from predefined list
+- `data_regs` (list(string), optional) - Data compliance regulations
+- `security_review` (string, optional) - Security review identifier/date
+- `privacy_review` (string, optional) - Privacy review identifier/date
+
+##### Feature Toggles
+- `source_repo_tags_enabled` (bool, optional, default: true) - Include git repository tags
+- `system_prefixes_enabled` (bool, optional, default: true) - Add platform prefixes to system IDs
+- `not_applicable_enabled` (bool, optional, default: true) - Include N/A tags for null values
+- `owner_tags_enabled` (bool, optional, default: true) - Include owner tags
+
+##### Additional Tags
+- `additional_tags` (map(string), optional) - Custom tags to merge
+- `additional_data_tags` (map(string), optional) - Custom data-specific tags to merge
+
+## Computed Attributes
+
+### Primary Outputs
+
+1. **name_prefix** (string) - Computed name prefix following Brockhoff standards:
+   - Format: `namespace-name-environment`, joining only the parts that are set (e.g. `ns-app`)
+   - Must match regex: `/^[a-z][a-z0-9-]{0,22}[a-z0-9]$/`
+   - Maximum 24 characters with intelligent truncation
+
+2. **tags** (map(string)) - Normalized tag map including:
+   - Environment and availability tags
+   - Management and ownership tags
+   - Project management and ITSM tags
+   - Source repository information (if enabled)
+   - Custom additional tags
+
+3. **data_tags** (map(string)) - Data-specific tags including:
+   - Data sensitivity classification
+   - Data owner information
+   - Data regulation compliance tags
+   - Custom additional data tags
+
+### Additional Outputs
+
+4. **tags_as_list_of_maps** (list(object)) - Tags as `{key, value, propagate_at_launch = "true"}` maps, sorted by key
+5. **tags_as_kvp_list** (list(string)) - Tags as key=value pairs
+6. **tags_as_comma_separated_string** (string) - Tags as comma-separated string
+7. **data_tags_as_list_of_maps** (list(object)) - Data tags as `{key, value, propagate_at_launch = "true"}` maps, sorted by key
+8. **data_tags_as_kvp_list** (list(string)) - Data tags as key=value pairs
+9. **data_tags_as_comma_separated_string** (string) - Data tags as comma-separated string
+
+## Business Logic Requirements
+
+### Name Prefix Generation
+
+1. **Standard Format**: If `namespace`, `name`, and `environment` are all provided:
+   - Combine as: `namespace-name-environment`
+   - Convert to lowercase
+   
+2. **Partial Format**: If `namespace` or `environment` are null:
+   - Join the parts that are present, in namespace, name, environment order (e.g. `ns-app`)
+   - This deliberately differs from the legacy module, which used `name` alone
+   
+3. **Length Validation**: Ensure final prefix matches `/^[a-z][a-z0-9-]{0,22}[a-z0-9]$/`
+   - Maximum 24 characters total
+   - If too long, truncate the `name` component to fit
+
+### Cloud Provider Constraints
+
+Apply different tag formatting rules based on `cloud_provider`:
+
+- **AWS**: 256 char limit, replace `/[^a-zA-Z0-9 \\.:=+@_/-]/` with `_`, delimiter: ` `
+- **Azure**: 256 char limit, replace `/[ <>%&\\?/#:]/` with `""`, delimiter: `;`, N/A: "NotApplicable"  
+- **GCP**: 63 char limit, lowercase tags, replace `/[^a-z0-9_-]/` with `-`, delimiter: `_`, N/A: "not_applicable"
+- **Default/DC**: 63 char limit, replace `/[<>%&\\?]/` with `_`, delimiter: `;`
+
+### Tag Processing
+
+1. **Tag Keys**: resource tags are `environment`, `availability`, `managedby`, `deletiondate`, `costcenter`,
+   `projectmgmtid`, `systemid`, `componentid`, `instanceid`, `productowners`, `codeowners`, `securityreview`,
+   `privacyreview`, `sourcerepo`, `sourcecommit`; data tags are `sensitivity`, `dataregulations`, `dataowners`,
+   `sovereignty`. All are prefixed with `tag_prefix`.
+
+2. **Conditional Tags**:
+   - `environment`, `availability`, `managedby` and `deletiondate` are always emitted
+   - N/A substitution applies only to `costcenter`, `productowners`, `codeowners`, `securityreview`,
+     `privacyreview`, `dataregulations` and `dataowners`
+   - Owner tags, including `dataowners`, are omitted entirely when `owner_tags_enabled` is false
+   - `projectmgmtid` and the ITSM id tags are emitted only when their identifier is set (never N/A)
+   - `sovereignty` (from `data_sovereignty`) is emitted only when set (never N/A); it is free text with
+     ISO 3166-1/3166-2 codes as the recommended, unvalidated convention
+
+3. **System Prefixes**: When `system_prefixes_enabled` is true:
+   - Prepend platform names to ITSM and PM codes
+   - Format: `platform<delimiter>code`
+
+4. **Git Repository Integration**: When `source_repo_tags_enabled` is true:
+   - Execute git commands to get repository URL and commit hash
+   - Convert SSH URLs to HTTPS format and strip any embedded credentials
+   - Include `sourcerepo` and `sourcecommit` tags
+   - When git information is unavailable, skip these tags and log a warning (never fail)
+
+5. **Key Validation**: prefixed tag keys must satisfy the target cloud's key rules; invalid keys are rejected
+
+### Ephemeral Environment Handling
+
+Deletion date resolution:
+- An explicit `deletion_date` (directly or inherited) always wins
+- Otherwise, for `environment_type = "Ephemeral"`, today (UTC) plus 90 days
+- Otherwise `never`
+
+### Validation Requirements
+
+1. **Input Validation**: 
+   - Validate cloud provider against allowed list
+   - Validate environment type against allowed list
+   - Validate name patterns and lengths
+   - Validate sensitivity and availability against allowed values
+
+2. **Output Validation**:
+   - Ensure name_prefix matches required regex pattern
+   - Apply cloud provider-specific tag constraints
+   - Truncate tag values that exceed length limits, never splitting a multi-byte character
+
+## Implementation Considerations
+
+### State Management
+- The provider should be stateless and re-compute outputs on each plan/apply
+- Git repository information should be fetched during plan phase
+- Consider caching git information to avoid repeated calls
 
 ### Error Handling
+- Gracefully handle missing git repository information
+- Provide clear error messages for validation failures
+- Support partial functionality when optional features fail
 
-* **Retry only transient errors** (timeouts, cloud provider throttling); fail on permanent ones (validation, permissions).
+### Performance
+- Minimize external command execution
+- Cache computed values during single terraform run
+- Avoid blocking operations where possible
 
-### CI/CD
+### Backwards Compatibility
+- Maintain exact output compatibility with existing module
+- Support all existing input parameters and validation rules
+- Preserve tag formatting and naming conventions
 
-* Use unique resource names, plan-only tests, and timeouts to control cost and conflicts.
-* Run with `make test`.
+## Testing Requirements
 
-### AI Agent Guidelines
+The provider should include comprehensive tests covering:
 
-* **Review**: Is test purpose clear? Will failures be obvious? Are tests isolated and focused on contracts?
-* **Generate**: Name tests after scenarios and expected outcomes. Test only what the module promises.
-* **Maintain**: Preserve test intent; update assertions as needed; keep tests isolated.
-* **Debug**: Check assertion error, inspect plan, validate inputs, run plan manually if needed.
+1. **Unit Tests**: All business logic functions
+2. **Integration Tests**: End-to-end data source functionality  
+3. **Cloud Provider Tests**: Validation of cloud-specific constraints
+4. **Edge Cases**: Truncation, missing inputs, invalid configurations
+5. **Git Integration Tests**: Repository information extraction
 
-### Anti-Patterns
+## Documentation Requirements
 
-* **Don’t**: Test all input combinations, implementation details, or write complex, multi-scenario tests in one function.
-* **Do**: Test key use cases, contract, and keep logic clear.
-
-### Key Points
-
-1. Test what the module promises, not the cloud provider.
-2. One simple, clear purpose per test.
-3. Failures must be obvious and actionable.
-4. Prefer plan-only tests for speed and cost.
-5. All tests must be independent.
-
----
-
-**Goal:** Simple, essential, and maintainable contract tests for Terraform modules.
+1. **Provider Documentation**: Complete attribute reference
+2. **Data Source Documentation**: Usage examples and output descriptions
+3. **Migration Guide**: Instructions for migrating from existing module
+4. **Examples**: Common usage patterns and configurations
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:46cd31e7 -->
 ## Beads Issue Tracker

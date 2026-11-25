@@ -3,10 +3,12 @@ package datasource
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -16,6 +18,22 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ datasource.DataSource = &ContextDataSource{}
 var _ datasource.DataSourceWithConfigure = &ContextDataSource{}
+
+// Attribute descriptions shared by the top-level schema and the context object
+const (
+	descEnvironmentName = "Full environment name, emitted as the environment tag. " +
+		"When unset the tag falls back to environment, then \"dev\"."
+	descEnvironmentType = "Deployment stage classification used by consuming configurations to choose " +
+		"resiliency and cost defaults (RPO/RTO): None (custom, no defaults), Ephemeral (RPO N/A, RTO 48h), " +
+		"Development (24h/48h), Testing (24h/48h), UAT (12h/24h), Production (1h/4h), " +
+		"MissionCritical (5m/1h). It does not affect the name prefix and is not emitted as a tag; " +
+		"Ephemeral sets the deletion date to today (UTC) plus 90 days when none is supplied."
+	descDeletionDate = "Resource deletion date in YYYY-MM-DD format, or \"never\". " +
+		"When unset it defaults to today (UTC) plus 90 days for Ephemeral environments, otherwise \"never\"."
+	descDataSovereignty = "Jurisdiction governing where the data may be stored and processed. " +
+		"By convention an ISO 3166-1 country code (e.g. DE) or ISO 3166-2 subdivision code (e.g. US-CA); " +
+		"free text, not validated against ISO. Emitted as the sovereignty data tag only when set."
+)
 
 // ProviderConfig holds provider-level configuration
 type ProviderConfig struct {
@@ -63,10 +81,11 @@ type ContextInputModel struct {
 	DataOwners    types.List   `tfsdk:"data_owners"`
 
 	// Data Classification
-	Sensitivity    types.String `tfsdk:"sensitivity"`
-	DataRegs       types.List   `tfsdk:"data_regs"`
-	SecurityReview types.String `tfsdk:"security_review"`
-	PrivacyReview  types.String `tfsdk:"privacy_review"`
+	Sensitivity     types.String `tfsdk:"sensitivity"`
+	DataRegs        types.List   `tfsdk:"data_regs"`
+	DataSovereignty types.String `tfsdk:"data_sovereignty"`
+	SecurityReview  types.String `tfsdk:"security_review"`
+	PrivacyReview   types.String `tfsdk:"privacy_review"`
 
 	// Feature Toggles
 	SourceRepoTagsEnabled types.Bool `tfsdk:"source_repo_tags_enabled"`
@@ -114,10 +133,11 @@ type ContextDataSourceModel struct {
 	DataOwners    types.List   `tfsdk:"data_owners"`
 
 	// Data Classification
-	Sensitivity    types.String `tfsdk:"sensitivity"`
-	DataRegs       types.List   `tfsdk:"data_regs"`
-	SecurityReview types.String `tfsdk:"security_review"`
-	PrivacyReview  types.String `tfsdk:"privacy_review"`
+	Sensitivity     types.String `tfsdk:"sensitivity"`
+	DataRegs        types.List   `tfsdk:"data_regs"`
+	DataSovereignty types.String `tfsdk:"data_sovereignty"`
+	SecurityReview  types.String `tfsdk:"security_review"`
+	PrivacyReview   types.String `tfsdk:"privacy_review"`
 
 	// Feature Toggles
 	SourceRepoTagsEnabled types.Bool `tfsdk:"source_repo_tags_enabled"`
@@ -159,11 +179,11 @@ func getContextAttributes() map[string]schema.Attribute {
 			Optional:    true,
 		},
 		"environment_name": schema.StringAttribute{
-			Description: "Full environment name",
+			Description: descEnvironmentName,
 			Optional:    true,
 		},
 		"environment_type": schema.StringAttribute{
-			Description: "One of: None, Ephemeral, Development, Testing, UAT, Production, MissionCritical",
+			Description: descEnvironmentType,
 			Optional:    true,
 		},
 		"enabled": schema.BoolAttribute{
@@ -179,7 +199,7 @@ func getContextAttributes() map[string]schema.Attribute {
 			Optional:    true,
 		},
 		"deletion_date": schema.StringAttribute{
-			Description: "Resource deletion date (YYYY-MM-DD format)",
+			Description: descDeletionDate,
 			Optional:    true,
 		},
 		"pm_platform": schema.StringAttribute{
@@ -233,6 +253,10 @@ func getContextAttributes() map[string]schema.Attribute {
 			Description: "Data compliance regulations",
 			Optional:    true,
 			ElementType: types.StringType,
+		},
+		"data_sovereignty": schema.StringAttribute{
+			Description: descDataSovereignty,
+			Optional:    true,
 		},
 		"security_review": schema.StringAttribute{
 			Description: "Security review identifier/date",
@@ -297,11 +321,11 @@ func (d *ContextDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				Optional:    true,
 			},
 			"environment_name": schema.StringAttribute{
-				Description: "Full environment name",
+				Description: descEnvironmentName,
 				Optional:    true,
 			},
 			"environment_type": schema.StringAttribute{
-				Description: "One of: None, Ephemeral, Development, Testing, UAT, Production, MissionCritical",
+				Description: descEnvironmentType,
 				Optional:    true,
 			},
 
@@ -319,7 +343,7 @@ func (d *ContextDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				Optional:    true,
 			},
 			"deletion_date": schema.StringAttribute{
-				Description: "Resource deletion date (YYYY-MM-DD format)",
+				Description: descDeletionDate,
 				Optional:    true,
 			},
 
@@ -382,6 +406,10 @@ func (d *ContextDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				Optional:    true,
 				ElementType: types.StringType,
 			},
+			"data_sovereignty": schema.StringAttribute{
+				Description: descDataSovereignty,
+				Optional:    true,
+			},
 			"security_review": schema.StringAttribute{
 				Description: "Security review identifier/date",
 				Optional:    true,
@@ -441,7 +469,7 @@ func (d *ContextDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				ElementType: types.StringType,
 			},
 			"tags_as_list_of_maps": schema.ListAttribute{
-				Description: "Tags formatted for AWS resources",
+				Description: "Tags as a list of maps with key, value and propagate_at_launch entries, sorted by key",
 				Computed:    true,
 				ElementType: types.MapType{
 					ElemType: types.StringType,
@@ -457,7 +485,7 @@ func (d *ContextDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 				Computed:    true,
 			},
 			"data_tags_as_list_of_maps": schema.ListAttribute{
-				Description: "Data tags formatted for AWS resources",
+				Description: "Data tags as a list of maps with key, value and propagate_at_launch entries, sorted by key",
 				Computed:    true,
 				ElementType: types.MapType{
 					ElemType: types.StringType,
@@ -604,10 +632,11 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		ITSMComponentID: mergeStringValue(data.ITSMComponentID, parentCtx.ITSMComponentID),
 		ITSMInstanceID:  mergeStringValue(data.ITSMInstanceID, parentCtx.ITSMInstanceID),
 
-		CostCenter:     mergeStringValue(data.CostCenter, parentCtx.CostCenter),
-		Sensitivity:    mergeStringValue(data.Sensitivity, parentCtx.Sensitivity),
-		SecurityReview: mergeStringValue(data.SecurityReview, parentCtx.SecurityReview),
-		PrivacyReview:  mergeStringValue(data.PrivacyReview, parentCtx.PrivacyReview),
+		CostCenter:      mergeStringValue(data.CostCenter, parentCtx.CostCenter),
+		Sensitivity:     mergeStringValue(data.Sensitivity, parentCtx.Sensitivity),
+		DataSovereignty: mergeStringValue(data.DataSovereignty, parentCtx.DataSovereignty),
+		SecurityReview:  mergeStringValue(data.SecurityReview, parentCtx.SecurityReview),
+		PrivacyReview:   mergeStringValue(data.PrivacyReview, parentCtx.PrivacyReview),
 
 		ProductOwners: mergeListValue(ctx, data.ProductOwners, parentCtx.ProductOwners),
 		CodeOwners:    mergeListValue(ctx, data.CodeOwners, parentCtx.CodeOwners),
@@ -638,45 +667,44 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	// Validation
-	if err := core.ValidateNamespace(config.Namespace); err != nil {
-		resp.Diagnostics.AddError("Invalid namespace", err.Error())
-		return
-	}
-	if err := core.ValidateEnvironment(config.Environment); err != nil {
-		resp.Diagnostics.AddError("Invalid environment", err.Error())
-		return
-	}
-	if err := core.ValidateEnvironmentType(config.EnvironmentType); err != nil {
-		resp.Diagnostics.AddError("Invalid environment_type", err.Error())
-		return
-	}
-	if err := core.ValidateAvailability(config.Availability); err != nil {
-		resp.Diagnostics.AddError("Invalid availability", err.Error())
-		return
-	}
-	if err := core.ValidateSensitivity(config.Sensitivity); err != nil {
-		resp.Diagnostics.AddError("Invalid sensitivity", err.Error())
-		return
-	}
-	if err := core.ValidateDeletionDate(config.DeletionDate); err != nil {
-		resp.Diagnostics.AddError("Invalid deletion_date", err.Error())
-		return
-	}
-	if err := core.ValidateEmails(config.ProductOwners); err != nil {
-		resp.Diagnostics.AddError("Invalid product_owners", err.Error())
-		return
-	}
-	if err := core.ValidateEmails(config.CodeOwners); err != nil {
-		resp.Diagnostics.AddError("Invalid code_owners", err.Error())
-		return
-	}
-	if err := core.ValidateEmails(config.DataOwners); err != nil {
-		resp.Diagnostics.AddError("Invalid data_owners", err.Error())
+	// An explicitly supplied blank data_sovereignty is rejected before inheritance can hide it;
+	// the library cannot tell an omitted value from an empty one
+	if !data.DataSovereignty.IsNull() && !data.DataSovereignty.IsUnknown() &&
+		strings.TrimSpace(data.DataSovereignty.ValueString()) == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("data_sovereignty"),
+			"Invalid data_sovereignty",
+			"data sovereignty must not be blank when supplied; omit it to inherit or leave it unset",
+		)
 		return
 	}
 
-	// Process ephemeral environment
-	core.ProcessEphemeralEnvironment(config)
+	validations := []struct {
+		attribute string
+		err       error
+	}{
+		{"namespace", core.ValidateNamespace(config.Namespace)},
+		{"environment", core.ValidateEnvironment(config.Environment)},
+		{"environment_type", core.ValidateEnvironmentType(config.EnvironmentType)},
+		{"availability", core.ValidateAvailability(config.Availability)},
+		{"sensitivity", core.ValidateSensitivity(config.Sensitivity)},
+		{"deletion_date", core.ValidateDeletionDate(config.DeletionDate)},
+		{"product_owners", core.ValidateEmails(config.ProductOwners)},
+		{"code_owners", core.ValidateEmails(config.CodeOwners)},
+		{"data_owners", core.ValidateEmails(config.DataOwners)},
+		{"data_sovereignty", core.ValidateDataSovereignty(config.DataSovereignty)},
+	}
+	for _, v := range validations {
+		if v.err != nil {
+			resp.Diagnostics.AddAttributeError(path.Root(v.attribute), "Invalid "+v.attribute, v.err.Error())
+		}
+	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Resolve deletion date: explicit, Ephemeral +90 days, or "never"
+	core.ResolveDeletionDate(config)
 
 	// Generate name prefix
 	nameGen := &core.NameGenerator{
@@ -686,7 +714,7 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 	namePrefix, err := nameGen.Generate()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to generate name prefix", err.Error())
+		resp.Diagnostics.AddAttributeError(path.Root("name"), "Failed to generate name prefix", err.Error())
 		return
 	}
 
@@ -706,13 +734,16 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	tags, err := tagProcessor.Process()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to generate tags", err.Error())
+		resp.Diagnostics.AddAttributeError(path.Root("additional_tags"), "Failed to generate tags", err.Error())
 		return
+	}
+	for _, warning := range tagProcessor.Warnings {
+		tflog.Warn(ctx, warning)
 	}
 
 	dataTags, err := tagProcessor.ProcessDataTags()
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to generate data tags", err.Error())
+		resp.Diagnostics.AddAttributeError(path.Root("additional_data_tags"), "Failed to generate data tags", err.Error())
 		return
 	}
 
@@ -770,7 +801,7 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	contextOutput := ContextInputModel{
 		Namespace:       types.StringValue(config.Namespace),
 		Environment:     types.StringValue(config.Environment),
-		EnvironmentName: types.StringValue(config.EnvironmentName),
+		EnvironmentName: types.StringValue(core.EffectiveEnvironmentName(config)),
 		EnvironmentType: types.StringValue(config.EnvironmentType),
 
 		Enabled:      types.BoolValue(config.Enabled),
@@ -786,10 +817,11 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		ITSMComponentID: types.StringValue(config.ITSMComponentID),
 		ITSMInstanceID:  types.StringValue(config.ITSMInstanceID),
 
-		CostCenter:     types.StringValue(config.CostCenter),
-		Sensitivity:    types.StringValue(config.Sensitivity),
-		SecurityReview: types.StringValue(config.SecurityReview),
-		PrivacyReview:  types.StringValue(config.PrivacyReview),
+		CostCenter:      types.StringValue(config.CostCenter),
+		Sensitivity:     types.StringValue(config.Sensitivity),
+		DataSovereignty: types.StringValue(config.DataSovereignty),
+		SecurityReview:  types.StringValue(config.SecurityReview),
+		PrivacyReview:   types.StringValue(config.PrivacyReview),
 
 		SourceRepoTagsEnabled: types.BoolValue(config.SourceRepoTagsEnabled),
 		SystemPrefixesEnabled: types.BoolValue(config.SystemPrefixesEnabled),
@@ -845,6 +877,7 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		"data_owners":              types.ListType{ElemType: types.StringType},
 		"sensitivity":              types.StringType,
 		"data_regs":                types.ListType{ElemType: types.StringType},
+		"data_sovereignty":         types.StringType,
 		"security_review":          types.StringType,
 		"privacy_review":           types.StringType,
 		"source_repo_tags_enabled": types.BoolType,

@@ -8,7 +8,7 @@ import (
 // Precompiled regular expressions
 var (
 	awsSanitizeRegex        = regexp.MustCompile(`[^a-zA-Z0-9 \\.:=+@_/-]`)
-	awsValidateKeyRegex     = regexp.MustCompile(`^[a-zA-Z0-9 +\-=._:/]+$`)
+	awsValidateKeyRegex     = regexp.MustCompile(`^[a-zA-Z0-9 +\-=._:/@]+$`)
 	azureSanitizeRegex      = regexp.MustCompile(`[ <>%&\\?/#:]`)
 	azureValidateKeyRegex   = regexp.MustCompile(`[<>%&\\?/]`)
 	gcpSanitizeRegex        = regexp.MustCompile(`[^a-z0-9_-]`)
@@ -47,7 +47,7 @@ func (p *AWSProvider) SanitizeTagValue(value string) string {
 }
 
 func (p *AWSProvider) ValidateTagKey(key string) bool {
-	// AWS tag keys can contain letters, numbers, spaces, and +-=._:/
+	// AWS tag keys can contain letters, numbers, spaces, and +-=._:/@
 	return awsValidateKeyRegex.MatchString(key)
 }
 

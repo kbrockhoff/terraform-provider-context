@@ -30,7 +30,7 @@ jobs:
         cache: true
 
     - name: Install tfplugindocs
-      run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
+      run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.25.0
 
     - name: Generate documentation
       run: tfplugindocs generate --provider-name=brockhoff

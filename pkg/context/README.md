@@ -110,12 +110,39 @@ type TagProcessor struct {
     CloudProvider CloudProvider
     Config        *DataSourceConfig
     TagPrefix     string
+
+    // GitInfoFunc supplies source repository information; nil means GetGitInfo.
+    // Set it to a stub in tests or when repository information comes from elsewhere.
+    GitInfoFunc func() (*GitInfo, error)
+
+    // Warnings collects non-fatal problems from the last Process call,
+    // for example "source repository tags skipped: ..." when git is unavailable.
+    Warnings []string
 }
 ```
 
 **Methods:**
 - `Process() (map[string]string, error)`: Generates main resource tags
 - `ProcessDataTags() (map[string]string, error)`: Generates data classification tags
+
+Both methods return an error naming the key when a prefixed tag key is invalid for the target
+cloud (for example `bc-Team` on `gcp`, or a `bc:` prefix on `dc`). Values are sanitized for the
+target cloud and truncated without splitting multi-byte characters.
+
+**Deletion date and environment helpers:**
+
+```go
+// Explicit date wins; Ephemeral gets today (UTC) + 90 days; otherwise "never"
+func ResolveDeletionDate(config *DataSourceConfig)
+
+// Environment tag value: EnvironmentName, else Environment, else "dev"
+func EffectiveEnvironmentName(config *DataSourceConfig) string
+
+// Deprecated: use ResolveDeletionDate
+func ProcessEphemeralEnvironment(config *DataSourceConfig)
+```
+
+Call `ResolveDeletionDate` before `Process` so the `deletiondate` tag is populated.
 
 #### DataSourceConfig
 
@@ -134,7 +161,7 @@ type DataSourceConfig struct {
     Enabled      bool
     Availability string   // preemptable, spot, standard, dedicated, isolated
     ManagedBy    string
-    DeletionDate string
+    DeletionDate string   // YYYY-MM-DD or "never"
 
     // Integration
     PMPlatform      string
@@ -151,10 +178,11 @@ type DataSourceConfig struct {
     DataOwners    []string
 
     // Data Classification
-    Sensitivity    string   // public, internal, confidential, restricted, critical
-    DataRegs       []string // GDPR, CCPA, etc.
-    SecurityReview string
-    PrivacyReview  string
+    Sensitivity     string   // public, internal, confidential, restricted, critical
+    DataRegs        []string // GDPR, CCPA, etc.
+    DataSovereignty string   // Jurisdiction, e.g. "DE" or "US-CA"; emitted as the sovereignty data tag only when set
+    SecurityReview  string
+    PrivacyReview   string
 
     // Feature Toggles
     SourceRepoTagsEnabled bool // Include git repository tags
@@ -221,7 +249,8 @@ tags := map[string]string{"env": "prod", "team": "platform"}
 
 // For AWS resources
 awsTags := context.ConvertTagsToListOfMaps(tags)
-// Result: [{"key": "env", "value": "prod"}, {"key": "team", "value": "platform"}]
+// Result: [{"key": "env", "value": "prod", "propagate_at_launch": "true"},
+//          {"key": "team", "value": "platform", "propagate_at_launch": "true"}]
 
 // For Docker/container labels
 kvpTags := context.ConvertTagsToKVPList(tags)
@@ -238,14 +267,15 @@ csvTags := context.ConvertTagsToCommaSeparated(tags)
 
 ```go
 type GitInfo struct {
-    RepoURL    string // Repository URL (converted to HTTPS)
+    RepoURL    string // Repository URL (converted to HTTPS, credentials stripped)
     CommitHash string // Full commit hash
 }
 ```
 
 **Functions:**
 ```go
-// Get repository information (cached for 5 minutes)
+// Get repository information (cached for 5 minutes, including failures).
+// Returns an error when neither the remote URL nor the commit can be read.
 func GetGitInfo() (*GitInfo, error)
 
 // Clear the cache
@@ -272,7 +302,8 @@ func ValidateCloudProvider(provider string) error
 func ValidateEnvironmentType(envType string) error
 func ValidateAvailability(availability string) error
 func ValidateSensitivity(sensitivity string) error
-func ValidateDeletionDate(date string) error
+func ValidateDeletionDate(date string) error      // YYYY-MM-DD or "never"
+func ValidateDataSovereignty(value string) error  // rejects blank values only; ISO 3166 is a convention
 func ValidateEmail(email string) error
 func ValidateEmails(emails []string) error
 ```
