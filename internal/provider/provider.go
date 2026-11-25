@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/kbrockhoff/terraform-provider-context/internal/core"
 	ctxdatasource "github.com/kbrockhoff/terraform-provider-context/internal/datasource"
 )
 
@@ -44,7 +46,7 @@ func (p *ContextProvider) Schema(ctx context.Context, req provider.SchemaRequest
 				Optional:    true,
 			},
 			"tag_prefix": schema.StringAttribute{
-				Description: "Prefix for all generated tags",
+				Description: "Prefix for all generated tag keys (default \"bc-\"). The prefixed keys must be valid for the target cloud.",
 				Optional:    true,
 			},
 		},
@@ -74,16 +76,17 @@ func (p *ContextProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	// Validate cloud provider
-	validProviders := map[string]bool{
-		"dc": true, "aws": true, "az": true, "gcp": true,
-		"oci": true, "ibm": true, "do": true, "vul": true,
-		"ali": true, "cv": true,
+	if err := core.ValidateCloudProvider(cloudProvider); err != nil {
+		resp.Diagnostics.AddAttributeError(path.Root("cloud_provider"), "Invalid cloud provider", err.Error())
+		return
 	}
 
-	if !validProviders[cloudProvider] {
-		resp.Diagnostics.AddError(
-			"Invalid cloud provider",
-			fmt.Sprintf("Cloud provider '%s' is not valid. Must be one of: dc, aws, az, gcp, oci, ibm, do, vul, ali, cv", cloudProvider),
+	// Validate the tag prefix produces keys the target cloud accepts
+	if !core.GetCloudProvider(cloudProvider).ValidateTagKey(tagPrefix + "environment") {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("tag_prefix"),
+			"Invalid tag prefix",
+			fmt.Sprintf("Tag prefix %q produces tag keys that are not valid for cloud provider %q", tagPrefix, cloudProvider),
 		)
 		return
 	}

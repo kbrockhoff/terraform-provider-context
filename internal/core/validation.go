@@ -51,3 +51,7 @@ func ValidateEmail(email string) error {
 func ValidateEmails(emails []string) error {
 	return ctx.ValidateEmails(emails)
 }
+
+func ValidateDataSovereignty(value string) error {
+	return ctx.ValidateDataSovereignty(value)
+}

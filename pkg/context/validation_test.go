@@ -217,6 +217,21 @@ func TestValidateDeletionDate(t *testing.T) {
 			date:    "not-a-date",
 			wantErr: true,
 		},
+		{
+			name:    "never keyword",
+			date:    "never",
+			wantErr: false,
+		},
+		{
+			name:    "never keyword is case sensitive",
+			date:    "Never",
+			wantErr: true,
+		},
+		{
+			name:    "nonexistent day",
+			date:    "2025-02-30",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -305,6 +320,30 @@ func TestValidateEmails(t *testing.T) {
 			err := ValidateEmails(tt.emails)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateEmails() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateDataSovereignty(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   string
+		wantErr bool
+	}{
+		{name: "not supplied", value: "", wantErr: false},
+		{name: "iso 3166-2 subdivision", value: "US-CA", wantErr: false},
+		{name: "iso 3166-1 country", value: "DE", wantErr: false},
+		{name: "free text", value: "Quebec", wantErr: false},
+		{name: "whitespace only", value: "   ", wantErr: true},
+		{name: "tab and newline only", value: "\t\n", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateDataSovereignty(tt.value)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateDataSovereignty() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

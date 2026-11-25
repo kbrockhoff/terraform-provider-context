@@ -46,6 +46,9 @@ func main() {
 		AdditionalDataTags:    make(map[string]string),
 	}
 
+	// Resolve the deletion date: explicit date, Ephemeral +90 days, otherwise "never"
+	context.ResolveDeletionDate(config)
+
 	// Get cloud provider (AWS in this example)
 	cloudProvider := context.GetCloudProvider("aws")
 
@@ -60,6 +63,11 @@ func main() {
 	tags, err := tagProcessor.Process()
 	if err != nil {
 		log.Fatalf("Failed to process tags: %v", err)
+	}
+
+	// Non-fatal problems, such as missing git repository information
+	for _, warning := range tagProcessor.Warnings {
+		fmt.Printf("Warning: %s\n", warning)
 	}
 
 	fmt.Println("Generated tags:")

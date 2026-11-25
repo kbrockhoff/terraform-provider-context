@@ -3,8 +3,12 @@ package context
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 )
+
+// NeverDeletionDate is the deletion date value for resources with no planned deletion
+const NeverDeletionDate = "never"
 
 var (
 	namespaceRegex   = regexp.MustCompile(`^[a-z][a-z0-9-]{0,6}[a-z0-9]$|^[a-z]$`)
@@ -135,8 +139,8 @@ func ValidateSensitivity(sensitivity string) error {
 
 // ValidateDeletionDate validates deletion date format
 func ValidateDeletionDate(date string) error {
-	if date == "" {
-		return nil // Optional field
+	if date == "" || date == NeverDeletionDate {
+		return nil // Optional field, or the explicit "never" keyword
 	}
 
 	if !dateRegex.MatchString(date) {
@@ -172,5 +176,20 @@ func ValidateEmails(emails []string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+// ValidateDataSovereignty validates the data sovereignty jurisdiction.
+// The value is free text; ISO 3166-1 country codes or ISO 3166-2 subdivision codes are the
+// recommended convention but are not enforced. Only blank values are rejected.
+func ValidateDataSovereignty(value string) error {
+	if value == "" {
+		return nil // Optional field
+	}
+
+	if strings.TrimSpace(value) == "" {
+		return fmt.Errorf("data sovereignty must not be blank when supplied")
+	}
+
 	return nil
 }
