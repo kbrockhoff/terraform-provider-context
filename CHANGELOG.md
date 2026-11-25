@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.2.0...v0.3.0) (2026-11-25)
+
+
+### Features
+
+* match legacy module tag output, add data_sovereignty, validate tag keys ([1de3a67](https://github.com/kbrockhoff/terraform-provider-context/commit/1de3a6781c099c25206b664e162fb6d0116f450d))
+* spec 001 context provider conformance (legacy parity, data sovereignty, tests) ([db0d985](https://github.com/kbrockhoff/terraform-provider-context/commit/db0d9851fc52325ea364d85eb3f01993d901f387))
+
+
+### Bug Fixes
+
+* address CodeRabbit review findings on PR [#40](https://github.com/kbrockhoff/terraform-provider-context/issues/40) ([afbdce8](https://github.com/kbrockhoff/terraform-provider-context/commit/afbdce8f901ca7aeb46f51a6195c89b8962d0849))
+
 ## [0.2.0](https://github.com/kbrockhoff/terraform-provider-context/compare/v0.1.6...v0.2.0) (2025-10-18)
 
 
