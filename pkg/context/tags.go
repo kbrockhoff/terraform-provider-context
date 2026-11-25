@@ -193,9 +193,13 @@ func (tp *TagProcessor) addGitTags(tags map[string]string) {
 
 	if gitInfo.RepoURL != "" {
 		tags["sourcerepo"] = gitInfo.RepoURL
+	} else {
+		tp.Warnings = append(tp.Warnings, "sourcerepo tag skipped: repository remote URL unavailable")
 	}
 	if gitInfo.CommitHash != "" {
 		tags["sourcecommit"] = gitInfo.CommitHash
+	} else {
+		tp.Warnings = append(tp.Warnings, "sourcecommit tag skipped: commit unavailable")
 	}
 }
 

@@ -87,6 +87,57 @@ func TestTagProcessor_GitUnavailableWarns(t *testing.T) {
 	}
 }
 
+func TestTagProcessor_PartialGitInfoWarns(t *testing.T) {
+	tests := []struct {
+		name        string
+		info        GitInfo
+		wantTag     string
+		missingTag  string
+		wantWarning string
+	}{
+		{
+			name:        "commit without remote",
+			info:        GitInfo{CommitHash: "abc123"},
+			wantTag:     "test-sourcecommit",
+			missingTag:  "test-sourcerepo",
+			wantWarning: "sourcerepo tag skipped",
+		},
+		{
+			name:        "remote without commit",
+			info:        GitInfo{RepoURL: "https://github.com/org/repo"},
+			wantTag:     "test-sourcerepo",
+			missingTag:  "test-sourcecommit",
+			wantWarning: "sourcecommit tag skipped",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			info := tt.info
+			processor := &TagProcessor{
+				CloudProvider: GetCloudProvider("dc"),
+				Config:        &DataSourceConfig{SourceRepoTagsEnabled: true},
+				TagPrefix:     "test-",
+				GitInfoFunc:   func() (*GitInfo, error) { return &info, nil },
+			}
+
+			tags, err := processor.Process()
+			if err != nil {
+				t.Fatalf("Process() error = %v, want partial git info to be non-fatal", err)
+			}
+			if tags[tt.wantTag] == "" {
+				t.Errorf("%s missing, want the available value kept", tt.wantTag)
+			}
+			if _, ok := tags[tt.missingTag]; ok {
+				t.Errorf("%s present, want omitted", tt.missingTag)
+			}
+			if len(processor.Warnings) != 1 || !strings.Contains(processor.Warnings[0], tt.wantWarning) {
+				t.Errorf("Warnings = %v, want one %q warning", processor.Warnings, tt.wantWarning)
+			}
+		})
+	}
+}
+
 func TestTagProcessor_WithoutGitTags(t *testing.T) {
 	// Setup config with git tags disabled
 	config := &DataSourceConfig{
@@ -255,6 +306,9 @@ func TestTagProcessor_ValidatesTagKeys(t *testing.T) {
 		{name: "dc rejects colon prefix", cloud: "dc", prefix: "bc:", wantErr: "bc:"},
 		{name: "gcp rejects uppercase data key", cloud: "gcp", prefix: "bc-", data: map[string]string{"Owner": "x"}, wantErr: "bc-Owner"},
 		{name: "aws accepts lowercase key", cloud: "aws", prefix: "bc-", additional: map[string]string{"team": "x"}},
+		{name: "aws accepts @ in resource tag key", cloud: "aws", prefix: "bc-", additional: map[string]string{"team@example.com": "x"}},
+		{name: "aws accepts @ in data tag key", cloud: "aws", prefix: "bc-", data: map[string]string{"owner@example.com": "x"}},
+		{name: "aws rejects # in key", cloud: "aws", prefix: "bc-", additional: map[string]string{"bad#key": "x"}, wantErr: "bc-bad#key"},
 	}
 
 	for _, tt := range tests {

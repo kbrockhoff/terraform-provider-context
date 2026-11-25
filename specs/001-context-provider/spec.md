@@ -147,7 +147,7 @@ change or scheduled for correction.
     `Production`, `MissionCritical`.
   - **availability**: one of `preemptable`, `spot`, `standard`, `dedicated`, `isolated`.
   - **sensitivity**: one of `public`, `internal`, `confidential`, `restricted`, `critical`.
-  - **deletion date**: a real calendar date in `YYYY-MM-DD` form.
+  - **deletion date**: a real calendar date in `YYYY-MM-DD` form, or the keyword `never`.
   - **owner lists**: every entry is a syntactically valid email address.
   - **data sovereignty**: when supplied, not empty and not only whitespace.
 
@@ -458,8 +458,10 @@ gaps 2–6.
 | 6 | List-of-maps entries | include `propagate_at_launch = "true"` | `key` and `value` only | Match legacy (FR-023) |
 | 7 | `name` inheritance from the parent context | inherited | not inherited | Keep the provider's behavior (FR-005) |
 
-Gaps 2–6 change the provider's current outputs. Ship them as one MINOR release and list each
-changed tag in the changelog.
+Gaps 2–6 change the provider's current outputs. Under *Compatibility-Driven Evolution*
+(principles v1.0.1) they are legacy-parity bug fixes, which are PATCH-level even though they
+change default tag values, and the changelog must list each changed tag. They ship in the same
+release as the additive FR-028 (MINOR), so that release is a MINOR release.
 
 ### Additions beyond the legacy module
 

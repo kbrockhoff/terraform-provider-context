@@ -68,6 +68,15 @@ func (p *ContextProvider) Configure(ctx context.Context, req provider.ConfigureR
 	cloudProvider := "dc"
 	if !data.CloudProvider.IsNull() {
 		cloudProvider = data.CloudProvider.ValueString()
+		// An explicit empty value is invalid; only an omitted attribute gets the dc default
+		if cloudProvider == "" {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("cloud_provider"),
+				"Invalid cloud provider",
+				"cloud provider must not be empty; omit it for the default (dc) or use one of: dc, aws, az, gcp, oci, ibm, do, vul, ali, cv",
+			)
+			return
+		}
 	}
 
 	tagPrefix := "bc-"

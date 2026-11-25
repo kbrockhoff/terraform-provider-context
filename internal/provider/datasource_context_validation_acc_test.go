@@ -60,6 +60,20 @@ func TestAccContext_ValidationErrors(t *testing.T) {
 			wantErr: `Invalid product_owners`,
 		},
 		{
+			name:    "explicit empty data sovereignty",
+			config:  contextWith(`data_sovereignty = ""`),
+			wantErr: `Invalid data_sovereignty`,
+		},
+		{
+			name: "explicit empty cloud provider",
+			config: `
+provider "brockhoff" {
+  cloud_provider = ""
+}
+data "brockhoff_context" "test" { name = "app" }`,
+			wantErr: `Invalid cloud provider`,
+		},
+		{
 			name: "unknown cloud provider",
 			config: `
 provider "brockhoff" {

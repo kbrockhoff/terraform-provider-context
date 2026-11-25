@@ -1,7 +1,13 @@
 <!--
 Sync Impact Report
 ==================
-Version change: (unversioned template) → 1.0.0
+Version change: 1.0.0 → 1.0.1 (2026-11-25)
+Bump rationale: PATCH clarification. Compatibility-Driven Evolution now states which rule wins
+when a change restores legacy behavior and also changes a default tag value, and how a release
+containing several change classes is versioned. No principle added, removed or redefined.
+Templates: no changes required. Spec 001 Notes updated to state its classification.
+
+Previous: (unversioned template) → 1.0.0
 Bump rationale: first ratified version; every placeholder replaced with project-specific content.
 
 Modified principles (template placeholder → new title):
@@ -203,6 +209,12 @@ Classify each change before you build it:
   values, is breaking: a MAJOR release, preceded by a deprecation warning in at least one MINOR
   release.
 
+When a change both restores the documented standard or legacy module output and changes a
+default tag key or value, the PATCH rule applies: the legacy output is the contract consumers
+migrated from (*Preserve Consumer Compatibility*), so restoring it is a fix, not a break. The
+MAJOR rule covers changes that move outputs away from both the standard and the legacy module.
+A release that contains several classes of change is versioned by the highest one.
+
 Pick the least disruptive classification that still delivers the change.
 
 ### Progressive Cloud Coverage
@@ -241,4 +253,4 @@ Report and the dependent templates.
 `CLAUDE.md`, `.agents/agents.md`, the `Makefile` and `docs/design.md` cover the day-to-day
 HOW, and change more often to follow tooling.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-24 | **Last Amended**: 2026-11-24
+**Version**: 1.0.1 | **Ratified**: 2026-11-24 | **Last Amended**: 2026-11-25

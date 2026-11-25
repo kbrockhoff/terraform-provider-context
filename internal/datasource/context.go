@@ -3,6 +3,7 @@ package datasource
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -666,6 +667,18 @@ func (d *ContextDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	// Validation
+	// An explicitly supplied blank data_sovereignty is rejected before inheritance can hide it;
+	// the library cannot tell an omitted value from an empty one
+	if !data.DataSovereignty.IsNull() && !data.DataSovereignty.IsUnknown() &&
+		strings.TrimSpace(data.DataSovereignty.ValueString()) == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("data_sovereignty"),
+			"Invalid data_sovereignty",
+			"data sovereignty must not be blank when supplied; omit it to inherit or leave it unset",
+		)
+		return
+	}
+
 	validations := []struct {
 		attribute string
 		err       error

@@ -410,7 +410,7 @@ diagnostics and warnings.
   `dev` in `context_output` while `environment` does not.
 - [X] T038 [P] Update the comments in `examples/ephemeral/ephemeral.tf`: an explicit
   `deletion_date` wins, and non-Ephemeral contexts default to `never`.
-- [X] T039 Acceptance checkpoint: run
+- [ ] T039 Acceptance checkpoint: run
   `make install && TF_ACC=1 go test -v -timeout 30m ./internal/provider/...` and
   `make test-examples`. Every example must init, validate and plan successfully, and a second
   `terraform plan` in each example directory must report `No changes`.
