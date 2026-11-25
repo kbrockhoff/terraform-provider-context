@@ -2,7 +2,7 @@
 
 **Spec ID**: `001-context-provider`
 **Created**: 2026-11-24
-**Status**: Draft
+**Status**: Implemented (2026-11-25; release-time criteria pending, see Success Criteria)
 **Input**: User description: "reverse engineer the existing code and docs to generate specifications"
 
 ## Executive Summary *(mandatory)*
@@ -372,30 +372,30 @@ requirements are mandatory:
 
 ### Code Validation
 
-- [ ] All quality gates pass on the release branch: formatting, static analysis, lint and
+- [x] All quality gates pass on the release branch: formatting, static analysis, lint and
   dependency verification.
-- [ ] Schema descriptions, generated reference docs and README attribute tables list the same
+- [x] Schema descriptions, generated reference docs and README attribute tables list the same
   inputs, defaults and outputs.
-- [ ] Every `[NEEDS CLARIFICATION]` item and every legacy parity gap has a recorded decision,
+- [x] Every `[NEEDS CLARIFICATION]` item and every legacy parity gap has a recorded decision,
   and divergent behavior is called out in the changelog.
 
 ### Security Validation
 
-- [ ] A test proves that HTTPS remotes with embedded credentials produce credential-free
+- [x] A test proves that HTTPS remotes with embedded credentials produce credential-free
   `sourcerepo` values.
-- [ ] A test proves that every tag value, including additional tags, is sanitized and truncated
+- [x] A test proves that every tag value, including additional tags, is sanitized and truncated
   for each of the 4 rule sets.
 - [ ] Release pipeline output shows a signed checksum file for every release.
 
 ### Performance Validation
 
-- [ ] A benchmark shows a single evaluation without git lookup under 50 ms.
-- [ ] A test proves that 100 concurrent evaluations perform at most one git lookup inside the
+- [x] A benchmark shows a single evaluation without git lookup under 50 ms.
+- [x] A test proves that 100 concurrent evaluations perform at most one git lookup inside the
   cache window, with no race detector findings.
 
 ### Operational Validation
 
-- [ ] Acceptance tests plan every example configuration successfully, without cloud
+- [x] Acceptance tests plan every example configuration successfully, without cloud
   credentials.
 - [ ] A second plan of each example reports no changes.
 - [ ] The standalone library client example builds and produces output identical to the data
@@ -469,16 +469,16 @@ changed tag in the changelog.
 
 ### Code defects found (spec-conformance work)
 
-- FR-013, FR-014, FR-015, FR-016, FR-020, FR-023: these need code changes to close legacy
-  parity gaps 2–6.
-- FR-017: HTTPS remotes keep embedded credentials (bead `tfpctx-6ce`), and missing git
-  information is skipped silently with no warning logged.
-- FR-021: values are truncated at byte length, which can split multi-byte characters.
-- FR-022: tag key rules exist in the library but are never applied, so additional-tag keys are
-  not checked.
-- FR-027: the README and AGENTS.md list environment type under "Naming Configuration". The
-  schema description lists only the allowed values and does not explain the purpose, RPO or
-  RTO. The generated reference docs inherit that description.
-- FR-001: the provider repeats the allowed-cloud list instead of reusing the library's
-  validation.
-- Tests: there are none for `internal/provider` or `internal/datasource` (bead `tfpctx-24o`).
+All defects found while reverse-engineering the code were fixed on 2026-11-25 (tasks T001–T052):
+legacy parity gaps 2–6, credential stripping and warnings for git information (FR-017),
+rune-safe truncation (FR-021), tag key validation (FR-022), environment type documentation
+(FR-027), provider reuse of library validation (FR-001), and tests for `internal/provider` and
+`internal/datasource`.
+
+Open success criteria, which need a release or an applied example rather than code changes:
+
+- Signed checksum file in the release pipeline output (verified at the next release).
+- A second plan of each example reporting no changes. Plan stability is covered by the
+  plan-only step in every acceptance test; the examples themselves were planned but not applied.
+- A side-by-side comparison showing the client example's output is identical to the data
+  source for the same inputs.

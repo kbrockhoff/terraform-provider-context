@@ -48,10 +48,10 @@ the Terraform-level validation.
 **Purpose**: Add the test dependency, run the library tests in CI, and pin unpinned tools
 (principles: *Release Reproducibly and Verifiably*).
 
-- [ ] T001 Add the acceptance-test dependency to `go.mod`/`go.sum`: run
+- [X] T001 Add the acceptance-test dependency to `go.mod`/`go.sum`: run
   `go get github.com/hashicorp/terraform-plugin-testing@v1.16.0 && go mod tidy`. Confirm that
   `terraform-plugin-framework` stays at v1.19.0.
-- [ ] T002 [P] In `.github/workflows/ci.yml`, make these changes:
+- [X] T002 [P] In `.github/workflows/ci.yml`, make these changes:
   - Change the unit test step to
     `go test -v -race -coverprofile=coverage.out ./internal/... ./pkg/...`. Today
     `pkg/context` tests are not run in CI.
@@ -61,12 +61,12 @@ the Terraform-level validation.
     `setup-terraform` steps.
   - Replace `securego/gosec@master` with `securego/gosec@v2.30.0`.
   - Replace `tfplugindocs@latest` with `tfplugindocs@v0.25.0`.
-- [ ] T003 [P] In `.github/workflows/docs.yml`, replace `tfplugindocs@latest` with
+- [X] T003 [P] In `.github/workflows/docs.yml`, replace `tfplugindocs@latest` with
   `tfplugindocs@v0.25.0`.
-- [ ] T004 [P] In `Makefile`, replace every `golangci-lint/cmd/golangci-lint@latest` with
+- [X] T004 [P] In `Makefile`, replace every `golangci-lint/cmd/golangci-lint@latest` with
   `@v2.15.0` and every `tfplugindocs@latest` with `@v0.25.0`. These appear in the `lint`,
   `docs-generate`, `docs-validate`, `dev-setup` and `install-tools` targets.
-- [ ] T005 Setup checkpoint: run `go mod verify && go build ./... && go vet ./... && go test -race ./...`.
+- [X] T005 Setup checkpoint: run `go mod verify && go build ./... && go vet ./... && go test -race ./...`.
   All existing tests must pass before any behavior changes.
 
 **Checkpoint**: The toolchain is pinned and CI exercises the library.
@@ -78,7 +78,7 @@ the Terraform-level validation.
 **Purpose**: Fix the git URL credential leak, make git lookups testable, and accept `never` as
 a deletion date. Phase 3 depends on all three.
 
-- [ ] T006 Add table-driven tests in `pkg/context/git_test.go` for a new
+- [X] T006 Add table-driven tests in `pkg/context/git_test.go` for a new
   `normalizeRepoURL(raw string) (string, error)`:
 
   | Input | Expected |
@@ -94,7 +94,7 @@ a deletion date. Phase 3 depends on all three.
   | `"::not a url"` | error |
 
   Remove the tests that are tied to `convertSSHToHTTPS`.
-- [ ] T007 Implement `normalizeRepoURL` in `pkg/context/git.go` using `net/url`:
+- [X] T007 Implement `normalizeRepoURL` in `pkg/context/git.go` using `net/url`:
   1. Rewrite the scp-like `git@host:path` form to `ssh://git@host/path` before parsing.
   2. For the `ssh` scheme, set the scheme to `https` and drop the port.
   3. Always set `u.User = nil`.
@@ -103,7 +103,7 @@ a deletion date. Phase 3 depends on all three.
 
   Delete `convertSSHToHTTPS`. Callers use `normalizeRepoURL`; a URL that fails to normalize
   leaves `RepoURL` empty. This covers FR-017 and bead `tfpctx-6ce`.
-- [ ] T008 Add a test seam to `pkg/context/git.go`:
+- [X] T008 Add a test seam to `pkg/context/git.go`:
   `var gitCommand = func(args ...string) (string, error)`, which runs
   `exec.Command("git", args...).Output()` and trims the output. Then change `GetGitInfo`:
   - Use `gitCommand("config", "--get", "remote.origin.url")` and
@@ -111,7 +111,7 @@ a deletion date. Phase 3 depends on all three.
   - Return a non-nil error, `errGitUnavailable`, when both URL and commit are empty.
   - Cache the result and its error for the TTL, so a missing repository is not re-queried
     within 5 minutes.
-- [ ] T009 Add `TestGetGitInfoConcurrentSingleLookup` to `pkg/context/git_test.go`:
+- [X] T009 Add `TestGetGitInfoConcurrentSingleLookup` to `pkg/context/git_test.go`:
   1. Replace `gitCommand` with a counting stub guarded by `sync/atomic`.
   2. Call `ClearGitCache()`.
   3. Start 100 goroutines that call `GetGitInfo()`.
@@ -120,17 +120,17 @@ a deletion date. Phase 3 depends on all three.
 
   The test must pass under `go test -race`. This covers the scalability NFR and the
   performance validation criterion.
-- [ ] T010 [P] In `pkg/context/validation.go`, make `ValidateDeletionDate` accept the literal
+- [X] T010 [P] In `pkg/context/validation.go`, make `ValidateDeletionDate` accept the literal
   `never`. Add the cases `"never"` (valid), `"Never"` (invalid) and `"2025-02-30"` (invalid)
   to `pkg/context/validation_test.go`. This covers C2.
-- [ ] T048 In `pkg/context/validation.go`, add
+- [X] T048 In `pkg/context/validation.go`, add
   `func ValidateDataSovereignty(value string) error`. It returns `nil` for `""` (not supplied)
   and returns an error naming the field when `strings.TrimSpace(value) == ""`. Do not validate
   ISO 3166 formats: the value is free text. Add the cases `""` (valid), `"US-CA"` (valid),
   `"DE"` (valid), `"Quebec"` (valid) and `"   "` (invalid) to
   `pkg/context/validation_test.go`. Run this after T010, because both edit the same files. This
   covers C17 and FR-009/FR-028.
-- [ ] T011 Foundation checkpoint: run `go test -race -run 'Git|Validate' ./pkg/context/...`
+- [X] T011 Foundation checkpoint: run `go test -race -run 'Git|Validate' ./pkg/context/...`
   and `go vet ./pkg/...`.
 
 **Checkpoint**: Repository URLs are credential-free and git lookups can be faked in tests.
@@ -142,7 +142,7 @@ a deletion date. Phase 3 depends on all three.
 **Purpose**: Legacy parity for gaps 2–6, plus FR-016, FR-020, FR-021 and FR-022. Tasks
 T013–T021 all edit `tags.go`, so they run sequentially.
 
-- [ ] T012 Create `pkg/context/tags_parity_test.go` with failing tests that encode the legacy
+- [X] T012 Create `pkg/context/tags_parity_test.go` with failing tests that encode the legacy
   module's behavior. All of them use `GitInfoFunc` stubbed to return an error, or
   `SourceRepoTagsEnabled=false`. Cases:
   - (a) No PM code or ITSM ids, with N/A on: none of `projectmgmtid`, `systemid`,
@@ -163,7 +163,7 @@ T013–T021 all edit `tags.go`, so they run sequentially.
     and `dc` (`N/A`).
   - (g) N/A off: none of the 7 FR-020 keys is present, but `environment`, `availability`,
     `managedby` and `deletiondate` are present.
-- [ ] T013 In `pkg/context/tags.go`, add `var now = time.Now`, which tests can override, and
+- [X] T013 In `pkg/context/tags.go`, add `var now = time.Now`, which tests can override, and
   `func ResolveDeletionDate(config *DataSourceConfig)`:
   - an explicit `DeletionDate` is kept;
   - otherwise, `EnvironmentType == "Ephemeral"` gives `now().UTC().Add(90*24*time.Hour)`
@@ -172,14 +172,14 @@ T013–T021 all edit `tags.go`, so they run sequentially.
 
   Re-implement `ProcessEphemeralEnvironment` as a deprecated wrapper that calls
   `ResolveDeletionDate`, and add a `// Deprecated:` doc comment. This covers C1 and FR-016.
-- [ ] T014 In `pkg/context/tags.go`, add `func EffectiveEnvironmentName(config *DataSourceConfig) string`,
+- [X] T014 In `pkg/context/tags.go`, add `func EffectiveEnvironmentName(config *DataSourceConfig) string`,
   which returns EnvironmentName, else Environment, else `"dev"`. In `Process()`:
   - always set `environment` to `EffectiveEnvironmentName(...)`;
   - always set `availability`, `managedby` and `deletiondate` from the config, with no N/A
     path.
 
   This covers C3 and FR-013.
-- [ ] T015 In `Process()` in `pkg/context/tags.go`, change the PM and ITSM handling:
+- [X] T015 In `Process()` in `pkg/context/tags.go`, change the PM and ITSM handling:
   - emit `projectmgmtid` only when `PMProjectCode != ""`, prefixed with
     `PMPlatform + delimiter` when `SystemPrefixesEnabled && PMPlatform != ""`;
   - emit each of `systemid`, `componentid` and `instanceid` only when its id is non-empty,
@@ -187,12 +187,12 @@ T013–T021 all edit `tags.go`, so they run sequentially.
   - remove the N/A fallbacks for these four keys.
 
   This covers C4 and FR-014.
-- [ ] T016 In `pkg/context/tags.go`, rename `addTag` to `addOptionalTag` and use it only for
+- [X] T016 In `pkg/context/tags.go`, rename `addTag` to `addOptionalTag` and use it only for
   `costcenter`, `securityreview`, `privacyreview`, `dataregulations` and the owner keys.
   Change `ProcessDataTags()` so that `dataowners` is evaluated only inside
   `if tp.Config.OwnerTagsEnabled { … }`, matching `productowners` and `codeowners`. This
   covers C5, FR-015 and FR-020.
-- [ ] T017 In `pkg/context/tags.go`, add the exported fields
+- [X] T017 In `pkg/context/tags.go`, add the exported fields
   `GitInfoFunc func() (*GitInfo, error)` (nil means `GetGitInfo`) and `Warnings []string` to
   `TagProcessor`. In `Process()`:
   1. Reset `tp.Warnings`.
@@ -202,7 +202,7 @@ T013–T021 all edit `tags.go`, so they run sequentially.
   4. When git succeeds, emit `sourcerepo` and `sourcecommit` only when they are non-empty.
 
   This covers C7 and FR-017.
-- [ ] T018 In `pkg/context/tags.go`, extract the duplicated prefix, sanitize and truncate loop
+- [X] T018 In `pkg/context/tags.go`, extract the duplicated prefix, sanitize and truncate loop
   from `Process()` and `ProcessDataTags()` into
   `func (tp *TagProcessor) finalize(tags map[string]string) (map[string]string, error)`. Add
   `func truncateRunes(s string, max int) string`, which counts runes and never splits a
@@ -213,7 +213,7 @@ T013–T021 all edit `tags.go`, so they run sequentially.
   - a 70-character value on `gcp`, truncated to 63.
 
   This covers C8 and FR-021.
-- [ ] T019 In `finalize()` in `pkg/context/tags.go`, validate every prefixed key with
+- [X] T019 In `finalize()` in `pkg/context/tags.go`, validate every prefixed key with
   `tp.CloudProvider.ValidateTagKey(key)`. Return the first invalid key, in sorted order, as
   `fmt.Errorf("invalid tag key %q for target cloud rules", key)`. Add tests to
   `pkg/context/tags_test.go`:
@@ -222,13 +222,13 @@ T013–T021 all edit `tags.go`, so they run sequentially.
   - `aws` with `AdditionalTags{"team":"x"}` gives no error.
 
   This covers C9 and FR-022.
-- [ ] T020 In `pkg/context/tags.go`, make `ConvertTagsToListOfMaps` add
+- [X] T020 In `pkg/context/tags.go`, make `ConvertTagsToListOfMaps` add
   `"propagate_at_launch": "true"` to every entry, keeping the sort by key. Update the existing
   expectations in `pkg/context/tags_test.go`. This covers C10 and FR-023.
-- [ ] T021 Update the existing cases in `pkg/context/tags_test.go` that assumed N/A for absent
+- [X] T021 Update the existing cases in `pkg/context/tags_test.go` that assumed N/A for absent
   PM/ITSM ids, N/A environment or N/A deletion date. Set `GitInfoFunc` stubs in every
   `TagProcessor` test so that no test runs real git. The tests from T012 must now pass.
-- [ ] T049 In `pkg/context/tags.go`, add the `DataSovereignty string` field to
+- [X] T049 In `pkg/context/tags.go`, add the `DataSovereignty string` field to
   `DataSourceConfig`, under Data Classification. In `ProcessDataTags()`, set
   `tags["sovereignty"] = DataSovereignty` only when it is non-empty: use no `addOptionalTag`
   and no N/A path. Never add it in `Process()`. Add cases to
@@ -239,15 +239,15 @@ T013–T021 all edit `tags.go`, so they run sequentially.
   - empty with N/A on gives no `bc-sovereignty` key on any of the 4 clouds.
 
   This covers C17, FR-019 and FR-028.
-- [ ] T022 [P] In `internal/core/tags.go`, add the re-exports
+- [X] T022 [P] In `internal/core/tags.go`, add the re-exports
   `func ResolveDeletionDate(config *DataSourceConfig)` and
   `func EffectiveEnvironmentName(config *DataSourceConfig) string`, which delegate to
   `pkg/context`. Mark `ProcessEphemeralEnvironment` deprecated in its doc comment. Add no
   logic. This covers C15 and FR-025.
-- [ ] T050 [P] In `internal/core/validation.go`, add the re-export
+- [X] T050 [P] In `internal/core/validation.go`, add the re-export
   `func ValidateDataSovereignty(value string) error`, which delegates to `pkg/context`. Add no
   logic. This covers C17 and FR-025.
-- [ ] T023 [P] Create `pkg/context/bench_test.go` with two benchmarks:
+- [X] T023 [P] Create `pkg/context/bench_test.go` with two benchmarks:
   - `BenchmarkTagProcessorProcess`: every `DataSourceConfig` field populated, three owners,
     five additional tags, the `aws` provider, and `GitInfoFunc` returning a fixed
     `GitInfo`.
@@ -255,10 +255,10 @@ T013–T021 all edit `tags.go`, so they run sequentially.
 
   Also add `TestTagProcessorPerformanceBudget`, which runs `testing.Benchmark` on the first
   benchmark and fails if `NsPerOp() > 50_000_000`. This is the performance SLO.
-- [ ] T024 [P] Update `examples/client-app/main.go` to call `context.ResolveDeletionDate` in
+- [X] T024 [P] Update `examples/client-app/main.go` to call `context.ResolveDeletionDate` in
   place of `ProcessEphemeralEnvironment`, and to print `tp.Warnings`. Verify with
   `cd examples/client-app && go build ./... && go run .`.
-- [ ] T025 Library checkpoint: run `go test -race -cover ./pkg/context/...`, with coverage at
+- [X] T025 Library checkpoint: run `go test -race -cover ./pkg/context/...`, with coverage at
   least 90% and the T012 parity tests passing. Also run `go build ./... && go vet ./...`.
 
 **Checkpoint**: Library behavior conforms to FR-013 to FR-023. The adapter can now be wired up.
@@ -270,7 +270,7 @@ T013–T021 all edit `tags.go`, so they run sequentially.
 **Purpose**: Wire the library changes into the Terraform layer, using attribute-scoped
 diagnostics and warnings.
 
-- [ ] T026 [P] In `internal/provider/provider.go`, change `Configure`:
+- [X] T026 [P] In `internal/provider/provider.go`, change `Configure`:
   - Replace the inline `validProviders` map with `core.ValidateCloudProvider(cloudProvider)`.
     On failure, call
     `resp.Diagnostics.AddAttributeError(path.Root("cloud_provider"), "Invalid cloud provider", err.Error())`.
@@ -279,7 +279,7 @@ diagnostics and warnings.
     error on `path.Root("tag_prefix")` whose message names the cloud.
 
   This covers C13, FR-001 and FR-002.
-- [ ] T027 In `Read` in `internal/datasource/context.go`:
+- [X] T027 In `Read` in `internal/datasource/context.go`:
   - Replace `core.ProcessEphemeralEnvironment(config)` with
     `core.ResolveDeletionDate(config)`.
   - Convert each validation `AddError` to `AddAttributeError` with `path.Root(...)` on
@@ -290,16 +290,16 @@ diagnostics and warnings.
     error on `path.Root("additional_data_tags")`.
 
   This covers C12 and FR-009.
-- [ ] T028 In `internal/datasource/context.go`, after `tagProcessor.Process()`, call
+- [X] T028 In `internal/datasource/context.go`, after `tagProcessor.Process()`, call
   `tflog.Warn(ctx, w)` for each entry in `tagProcessor.Warnings`. Use `tflog`, not diagnostics,
   so that plans outside git stay quiet. This covers C12 and FR-017.
-- [ ] T029 In the `context_output` population in `internal/datasource/context.go`:
+- [X] T029 In the `context_output` population in `internal/datasource/context.go`:
   - set `environment_name` to `core.EffectiveEnvironmentName(config)`;
   - leave `environment` as the merged input, null-to-empty as today, with no `dev`;
   - set `deletion_date` to the resolved value from T027.
 
   This covers C11, FR-006 and FR-013.
-- [ ] T030 In `internal/datasource/context.go`, update the schema descriptions in both the
+- [X] T030 In `internal/datasource/context.go`, update the schema descriptions in both the
   top-level `Schema()` and `getContextAttributes()`:
   - `environment_type`: deployment-stage classification used by consuming modules to pick
     resiliency and cost defaults. List the 7 values with their RPO/RTO. State that it does not
@@ -312,7 +312,7 @@ diagnostics and warnings.
     and `propagate_at_launch`.
 
   This covers C14 and FR-027.
-- [ ] T051 In `internal/datasource/context.go`, add the optional string attribute
+- [X] T051 In `internal/datasource/context.go`, add the optional string attribute
   `data_sovereignty`:
   - Add it to `Schema()` and `getContextAttributes()`, so it appears in `parent_context` and
     `context_output`. Description: "Jurisdiction governing where the data may be stored and
@@ -328,11 +328,11 @@ diagnostics and warnings.
     to the `context_output` attribute type map.
 
   Run this after T030. This covers C17, FR-004, FR-005, FR-006 and FR-028.
-- [ ] T031 [P] Create `internal/datasource/context_test.go` with unit tests:
+- [X] T031 [P] Create `internal/datasource/context_test.go` with unit tests:
   - `mergeStringValue`, `mergeBoolValue`, `mergeListValue` and `mergeMapValue`: child set,
     parent only, neither, and a map merge where the child key wins;
   - `Schema()` returns no diagnostics, using `datasource.SchemaRequest`.
-- [ ] T032 Adapter checkpoint: run `go build ./... && go vet ./... && golangci-lint run ./...`,
+- [X] T032 Adapter checkpoint: run `go build ./... && go vet ./... && golangci-lint run ./...`,
   then `go test -race ./internal/...`.
 
 **Checkpoint**: The provider binary carries all conformance changes.
@@ -345,11 +345,11 @@ diagnostics and warnings.
 (bead `tfpctx-24o`). Each acceptance test uses `resource.UnitTest` or `resource.Test` with
 `TF_ACC`, and sets `source_repo_tags_enabled = false` unless it is testing git.
 
-- [ ] T033 Create `internal/provider/provider_test.go` with:
+- [X] T033 Create `internal/provider/provider_test.go` with:
   - `testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){"brockhoff": providerserver.NewProtocol6WithError(New("test")())}`;
   - `testAccPreCheck(t)`, a no-op that exists for future checks;
   - `TestProviderSchema`, which validates the provider schema with no diagnostics.
-- [ ] T034 [P] Create `internal/provider/datasource_context_acc_test.go`. Each test ends with a
+- [X] T034 [P] Create `internal/provider/datasource_context_acc_test.go`. Each test ends with a
   `PlanOnly: true` step that expects an empty plan, for the plan stability SLO.
   - `TestAccContext_Minimal`: `name = "webapp"`. Check that `name_prefix = webapp`,
     `tags.bc-environment = dev`, `tags.bc-deletiondate = never`, `tags.bc-availability =
@@ -372,7 +372,7 @@ diagnostics and warnings.
       and `context_output.environment_name = dev`.
   - `TestAccContext_NamePrefixPartial`: `namespace = "ns"`, `name = "app"` and no
     environment gives `name_prefix = ns-app` (gap 1, kept).
-- [ ] T035 [P] Create `internal/provider/datasource_context_validation_acc_test.go`, using
+- [X] T035 [P] Create `internal/provider/datasource_context_validation_acc_test.go`, using
   `ExpectError` regexps. One step per invalid input:
   - namespace `TooLongNS1`;
   - environment `Prod`;
@@ -386,14 +386,14 @@ diagnostics and warnings.
   - provider `tag_prefix = "bc:"` with `cloud_provider = "dc"`.
 
   Each regexp must match the attribute name or the rejected value.
-- [ ] T036 [P] Create `internal/provider/datasource_context_cloud_acc_test.go`. For each of
+- [X] T036 [P] Create `internal/provider/datasource_context_cloud_acc_test.go`. For each of
   `aws`, `az`, `gcp` and `dc`, assert:
   - the N/A value of `bc-costcenter`;
   - the delimiter in `bc-codeowners` with two owners;
   - sanitization of `additional_tags = { note = "a<b>&c?d/e#f:g" }`;
   - truncation of a 300-character value to 256 for aws/az and 63 for gcp/dc;
   - lowercase values on `gcp`.
-- [ ] T052 [P] Create `internal/provider/datasource_context_sovereignty_acc_test.go`:
+- [X] T052 [P] Create `internal/provider/datasource_context_sovereignty_acc_test.go`:
   - `data_sovereignty = "US-CA"` on `aws` gives `data_tags.bc-sovereignty = US-CA`, and
     `tags` has no `bc-sovereignty` key;
   - the same on `gcp` gives `us-ca`;
@@ -405,12 +405,12 @@ diagnostics and warnings.
   - a final `PlanOnly` step expects an empty plan.
 
   This covers FR-028.
-- [ ] T037 [P] Update `examples/parent-child/README.md` and `examples/parent-child/main.tf`
+- [X] T037 [P] Update `examples/parent-child/README.md` and `examples/parent-child/main.tf`
   comments to state that `name` is never inherited, and that `environment_name` falls back to
   `dev` in `context_output` while `environment` does not.
-- [ ] T038 [P] Update the comments in `examples/ephemeral/ephemeral.tf`: an explicit
+- [X] T038 [P] Update the comments in `examples/ephemeral/ephemeral.tf`: an explicit
   `deletion_date` wins, and non-Ephemeral contexts default to `never`.
-- [ ] T039 Acceptance checkpoint: run
+- [X] T039 Acceptance checkpoint: run
   `make install && TF_ACC=1 go test -v -timeout 30m ./internal/provider/...` and
   `make test-examples`. Every example must init, validate and plan successfully, and a second
   `terraform plan` in each example directory must report `No changes`.
@@ -424,7 +424,7 @@ diagnostics and warnings.
 **Purpose**: Make the docs match the spec (principles: *Document from the Schema*), close the
 beads, and run the final gates.
 
-- [ ] T040 Update `templates/data-sources/context.md.tmpl`:
+- [X] T040 Update `templates/data-sources/context.md.tmpl`:
   - add an "Environment Type" section with the FR-027 table;
   - add a "Migrating from terraform-external-context" section that lists the divergences
     (gap 1 prefix composition, `name` not inherited, provider-level `cloud_provider` and
@@ -432,7 +432,7 @@ beads, and run the final gates.
 
   Then run `make docs-generate` and confirm that `docs/data-sources/context.md` and
   `docs/index.md` changed as expected.
-- [ ] T041 [P] Update `README.md`:
+- [X] T041 [P] Update `README.md`:
   - move `environment_type` out of "Naming Configuration" into a new "Environment
     Classification" section with the RPO/RTO table;
   - document `deletion_date` defaults (`never`, Ephemeral + 90 days);
@@ -444,7 +444,7 @@ beads, and run the final gates.
   - add a short "Upgrade notes" section that lists the tag values changed by gaps 2–6.
 
   This covers bead `tfpctx-am0`.
-- [ ] T042 [P] Update `.agents/agents.md`, which `AGENTS.md` symlinks to:
+- [X] T042 [P] Update `.agents/agents.md`, which `AGENTS.md` symlinks to:
   - move `environment_type` out of "Naming Configuration";
   - fix "Ephemeral Environment Handling" so that an explicit date wins and the default is
     `never`;
@@ -456,7 +456,7 @@ beads, and run the final gates.
     `.specify/memory/principles.md`.
 
   This covers bead `tfpctx-am0`.
-- [ ] T043 [P] Update `docs/design.md`:
+- [X] T043 [P] Update `docs/design.md`:
   - replace the component tree with the real layout (`pkg/context` as the library,
     `internal/core` as aliases, no `internal/models` or `tests/`);
   - fix the tag key names in "System Prefix Logic";
@@ -465,12 +465,12 @@ beads, and run the final gates.
   - reference spec 001.
 
   This covers bead `tfpctx-6he`.
-- [ ] T044 [P] Update `pkg/context/README.md` to document `ResolveDeletionDate`,
+- [X] T044 [P] Update `pkg/context/README.md` to document `ResolveDeletionDate`,
   `EffectiveEnvironmentName`, `ValidateDataSovereignty`, `DataSourceConfig.DataSovereignty`,
   `TagProcessor.GitInfoFunc`, `TagProcessor.Warnings`, the
   deprecated `ProcessEphemeralEnvironment`, key validation errors and the
   `propagate_at_launch` entry.
-- [ ] T045 Final validation:
+- [X] T045 Final validation:
   - `gofmt -s -l .` produces no output;
   - `go vet ./...`, `golangci-lint run ./...`, `go mod verify`;
   - `go test -race -cover ./...`, with `pkg/context` at 90% or more;
@@ -480,12 +480,12 @@ beads, and run the final gates.
     `SHA256SUMS` are produced.
 
   Record any failures with their output.
-- [ ] T046 Traceability review: confirm every row of the table below has a passing test.
+- [X] T046 Traceability review: confirm every row of the table below has a passing test.
   Then:
   - set the `spec.md` Status to `Implemented`;
   - tick the matching items in the spec's Success Criteria checklist;
   - remove the fixed items from spec Notes → "Code defects found".
-- [ ] T047 Close the beads `tfpctx-6ce`, `tfpctx-24o`, `tfpctx-am0` and `tfpctx-6he` with
+- [X] T047 Close the beads `tfpctx-6ce`, `tfpctx-24o`, `tfpctx-am0` and `tfpctx-6he` with
   `bd close`. Report the changed files and propose `feat:`/`fix:`/`ci:`/`docs:` commit
   groupings, but do not commit until asked.
 
