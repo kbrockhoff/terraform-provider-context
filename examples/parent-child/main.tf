@@ -42,7 +42,8 @@ data "brockhoff_context" "parent" {
 }
 
 # Child context for API component
-# Inherits all parent settings but overrides name and adds component-specific tags
+# Inherits all parent settings except name (never inherited) and adds component-specific tags.
+# context_output.environment_name falls back to "dev" when unset; environment does not.
 data "brockhoff_context" "api" {
   # Use parent context as base
   parent_context = data.brockhoff_context.parent.context_output

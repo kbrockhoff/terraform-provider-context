@@ -4,32 +4,37 @@
 
 The Context Terraform Provider is designed to replace the `kbrockhoff/terraform-external-context` module with a native Terraform provider implementation. This provider generates standardized naming conventions and cloud-provider-specific tags for infrastructure resources, ensuring consistent resource management across multiple cloud platforms.
 
+> **Specification**: the authoritative behavior is in
+> [`specs/001-context-provider/spec.md`](../specs/001-context-provider/spec.md) (FR-001 to FR-028),
+> governed by [`.specify/memory/principles.md`](../.specify/memory/principles.md). This document
+> describes the design; where they disagree, the spec wins.
+
 ## Architecture Overview
 
 ### Component Structure
 
 ```
 terraform-provider-context/
+├── main.go                 # Plugin entry point (protocol 6)
+├── pkg/
+│   └── context/            # Reusable library: ALL business logic lives here
+│       ├── naming.go       # Name prefix generation
+│       ├── tags.go         # Tag processing, deletion date, format conversion
+│       ├── cloud.go        # Cloud provider tag rules
+│       ├── git.go          # Git repository integration (cached, credential-free)
+│       └── validation.go   # Input validation
 ├── internal/
-│   ├── provider/          # Provider implementation
-│   │   ├── provider.go    # Main provider configuration
-│   │   └── provider_test.go
-│   ├── datasource/        # Data source implementations
-│   │   ├── context.go     # Context data source
-│   │   └── context_test.go
-│   ├── core/              # Core business logic
-│   │   ├── naming.go      # Name prefix generation
-│   │   ├── tags.go        # Tag processing logic
-│   │   ├── cloud.go       # Cloud provider constraints
-│   │   ├── git.go         # Git repository integration
-│   │   └── validation.go  # Input validation
-│   └── models/            # Data models
-│       ├── config.go      # Configuration models
-│       └── outputs.go     # Output models
-├── examples/              # Usage examples
-├── docs/                  # Documentation
-└── tests/                 # Integration tests
+│   ├── provider/           # Provider schema/Configure + acceptance tests
+│   ├── datasource/         # brockhoff_context schema, inheritance merge, diagnostics
+│   └── core/               # Backward-compatible aliases of pkg/context (no logic)
+├── examples/               # Terraform examples and a standalone Go client (client-app)
+├── templates/              # tfplugindocs templates
+└── docs/                   # Generated registry docs + this design document
 ```
+
+The data source is a thin adapter: it maps Terraform types to `pkg/context` calls, reports
+attribute-scoped diagnostics, and logs warnings. Non-Terraform clients import `pkg/context`
+directly and get identical results.
 
 ### Key Design Principles
 
@@ -159,17 +164,19 @@ type TagProcessor struct {
     CloudProvider CloudProvider
     Config        *DataSourceConfig
     TagPrefix     string
+    GitInfoFunc   func() (*GitInfo, error) // nil means GetGitInfo
+    Warnings      []string                 // non-fatal problems from the last Process call
 }
 
 func (tp *TagProcessor) Process() (map[string]string, error) {
     // Pipeline stages:
-    // 1. Collect base tags from configuration
-    // 2. Apply cloud provider constraints
-    // 3. Process conditional tags based on feature flags
-    // 4. Add system prefixes if enabled
-    // 5. Merge additional tags
-    // 6. Apply N/A substitution if enabled
-    // 7. Validate and truncate values
+    // 1. Always emit environment, availability, managedby, deletiondate
+    // 2. Emit optional tags (costcenter, owners, reviews) or N/A when enabled
+    // 3. Emit PM/ITSM ids only when set, platform-prefixed when enabled
+    // 4. Add source repository tags, or record a warning when git is unavailable
+    // 5. Merge additional tags (they override generated keys)
+    // 6. Prefix keys, validate them against cloud key rules, sanitize values,
+    //    and truncate on rune boundaries
 }
 ```
 
@@ -216,25 +223,17 @@ type GitInfo struct {
     CommitHash string
 }
 
-type GitExtractor struct {
-    cacheTimeout time.Duration
-    cache        *GitInfo
-    lastFetch    time.Time
-}
-
-func (ge *GitExtractor) Extract() (*GitInfo, error) {
-    // 1. Check cache validity
-    // 2. Execute git commands:
-    //    - git config --get remote.origin.url
-    //    - git rev-parse HEAD
-    // 3. Convert SSH URLs to HTTPS format
-    // 4. Update cache
-}
+// GetGitInfo runs `git config --get remote.origin.url` and `git rev-parse HEAD`
+// through a replaceable gitCommand function, caches the result (including
+// "unavailable") for 5 minutes, and is safe for concurrent use.
+func GetGitInfo() (*GitInfo, error)
 ```
 
-**URL Conversion Rules**:
+**URL Normalization Rules** (`normalizeRepoURL`):
 - `git@github.com:user/repo.git` → `https://github.com/user/repo`
-- `ssh://git@bitbucket.org/user/repo.git` → `https://bitbucket.org/user/repo`
+- `ssh://git@host:2222/user/repo.git` → `https://host/user/repo`
+- `https://user:token@github.com/user/repo.git` → `https://github.com/user/repo` (credentials stripped)
+- Unparseable or local-path remotes are dropped
 
 ## Data Flow
 
@@ -287,56 +286,37 @@ graph LR
 
 ## Special Business Rules
 
-### Ephemeral Environment Handling
+### Deletion Date Resolution
 
 ```go
-func processEphemeralEnvironment(config *DataSourceConfig) {
-    if config.EnvironmentType == "Ephemeral" {
-        // Calculate deletion date as now + 90 days
-        config.DeletionDate = time.Now().Add(90 * 24 * time.Hour).Format("2006-01-02")
-    }
+func ResolveDeletionDate(config *DataSourceConfig) {
+    // 1. An explicit deletion_date (direct or inherited) always wins
+    // 2. Ephemeral environments: today (UTC) + 90 days
+    // 3. Everything else: "never"
 }
 ```
+
+`environment_type` is a deployment-stage classification for consuming configurations (RPO/RTO
+defaults). It is not a naming input and is never emitted as a tag; the deletion date is its only
+effect on outputs.
 
 ### System Prefix Logic
 
-```go
-func applySystemPrefixes(tags map[string]string, config *DataSourceConfig, delimiter string) {
-    if !config.SystemPrefixesEnabled {
-        return
-    }
-    
-    if config.PMPlatform != "" && config.PMProjectCode != "" {
-        tags["pmproject"] = fmt.Sprintf("%s%s%s", config.PMPlatform, delimiter, config.PMProjectCode)
-    }
-    
-    if config.ITSMPlatform != "" && config.ITSMSystemID != "" {
-        tags["itsmsystem"] = fmt.Sprintf("%s%s%s", config.ITSMPlatform, delimiter, config.ITSMSystemID)
-    }
-}
-```
+When `system_prefixes_enabled` is true and a platform is set, identifiers are emitted as
+`platform<delimiter>id`:
+
+- `projectmgmtid` from `pm_platform` + `pm_project_code`
+- `systemid`, `componentid`, `instanceid` from `itsm_platform` + the matching ITSM id
+
+Each of these tags is emitted only when its identifier is set; they are never N/A.
 
 ### N/A Substitution
 
-```go
-func applyNASubstitution(tags map[string]string, config *DataSourceConfig, naValue string) {
-    if !config.NotApplicableEnabled {
-        // Remove null value tags
-        for key, value := range tags {
-            if value == "" {
-                delete(tags, key)
-            }
-        }
-    } else {
-        // Substitute with N/A value
-        for key, value := range tags {
-            if value == "" {
-                tags[key] = naValue
-            }
-        }
-    }
-}
-```
+N/A substitution applies only to `costcenter`, `productowners`, `codeowners`, `securityreview`,
+`privacyreview`, `dataregulations` and `dataowners`. When `not_applicable_enabled` is true an
+absent value becomes the cloud's N/A value; when false the tag is omitted. Owner tags, including
+`dataowners`, are omitted entirely when `owner_tags_enabled` is false. `sovereignty` is emitted
+only when `data_sovereignty` is set.
 
 ## Performance Considerations
 
@@ -357,8 +337,8 @@ func applyNASubstitution(tags map[string]string, config *DataSourceConfig, naVal
 
 ### Error Categories
 
-1. **Validation Errors**: Return immediately with descriptive message
-2. **Git Errors**: Log warning and continue without git tags
+1. **Validation Errors**: Return immediately with an attribute-scoped diagnostic naming the value
+2. **Git Errors**: Log a warning via `tflog.Warn` and continue without git tags
 3. **System Errors**: Fatal errors that prevent provider operation
 
 ### Error Response Format

@@ -58,15 +58,30 @@ The provider accepts minimal configuration focused on cloud-specific settings:
 #### Naming Configuration
 - `namespace` (Optional) - Organization or business unit identifier (1-8 chars)
 - `name` (Optional) - Unique resource name
-- `environment` (Optional) - Environment abbreviation (1-8 chars)  
-- `environment_name` (Optional) - Full environment name
-- `environment_type` (Optional) - Environment type: `None`, `Ephemeral`, `Development`, `Testing`, `UAT`, `Production`, `MissionCritical`
+- `environment` (Optional) - Environment abbreviation (1-8 chars)
+- `environment_name` (Optional) - Full environment name, emitted as the `environment` tag (falls back to `environment`, then `dev`)
+
+#### Environment Classification
+- `environment_type` (Optional) - Deployment stage classification. Consuming configurations use it to choose
+  resiliency and cost defaults; the provider only validates it and passes it through `context_output`. It does
+  not affect `name_prefix` and is not emitted as a tag. `Ephemeral` sets a deletion date of today (UTC) + 90 days.
+
+| Type | Use Case | Configuration Focus | RPO | RTO |
+|------|----------|---------------------|-----|-----|
+| `None` | Custom configuration | No defaults applied, use individual config values | N/A | N/A |
+| `Ephemeral` | Temporary environments | Cost-optimized, minimal durability requirements | N/A | 48h |
+| `Development` | Developer workspaces | Balanced cost and functionality for active development | 24h | 48h |
+| `Testing` | Automated testing | Consistent, repeatable configurations | 24h | 48h |
+| `UAT` | User acceptance testing | Production-like settings with some cost optimization | 12h | 24h |
+| `Production` | Live systems | High availability, durability, and performance | 1h | 4h |
+| `MissionCritical` | Critical production | Maximum reliability, redundancy, and monitoring | 5m | 1h |
 
 #### Resource Management
 - `enabled` (Optional) - Enable/disable resource creation (default: `true`)
 - `availability` (Optional) - Availability level (default: `"preemptable"`)
 - `managedby` (Optional) - Management platform identifier (default: `"terraform"`)
-- `deletion_date` (Optional) - Resource deletion date (YYYY-MM-DD format)
+- `deletion_date` (Optional) - Resource deletion date (`YYYY-MM-DD`) or `never`. Defaults to today (UTC) + 90 days
+  for `Ephemeral` environments, otherwise `never`. An explicit value always wins.
 
 #### Integration & Ownership
 - `pm_platform` / `pm_project_code` - Project management integration
@@ -77,6 +92,9 @@ The provider accepts minimal configuration focused on cloud-specific settings:
 #### Data Classification
 - `sensitivity` (Optional) - Data sensitivity level (default: `"confidential"`)
 - `data_regs` - Data compliance regulations
+- `data_sovereignty` (Optional) - Jurisdiction governing where the data may be stored and processed. By convention an
+  ISO 3166-1 country code (`DE`) or ISO 3166-2 subdivision code (`US-CA`); free text, not validated against ISO.
+  Emitted as the `sovereignty` data tag only when set, never as N/A.
 - `security_review` / `privacy_review` - Review identifiers/dates
 
 #### Feature Toggles
@@ -97,12 +115,31 @@ The provider accepts minimal configuration focused on cloud-specific settings:
 - `data_tags` - Data-specific tags map
 
 #### Alternative Formats
-- `tags_as_list_of_maps` - Tags formatted for AWS resources
+- `tags_as_list_of_maps` - Tags as `{key, value, propagate_at_launch = "true"}` maps, sorted by key
 - `tags_as_kvp_list` - Tags as key=value pairs
 - `tags_as_comma_separated_string` - Tags as comma-separated string
-- `data_tags_as_list_of_maps` - Data tags formatted for AWS resources
-- `data_tags_as_kvp_list` - Data tags as key=value pairs  
+- `data_tags_as_list_of_maps` - Data tags as `{key, value, propagate_at_launch = "true"}` maps, sorted by key
+- `data_tags_as_kvp_list` - Data tags as key=value pairs
 - `data_tags_as_comma_separated_string` - Data tags as comma-separated string
+
+### Generated Tag Keys
+
+Every key is prefixed with the provider's `tag_prefix`.
+
+| Tag set | Key | When emitted |
+|---------|-----|--------------|
+| `tags` | `environment`, `availability`, `managedby`, `deletiondate` | Always |
+| `tags` | `costcenter`, `securityreview`, `privacyreview` | Value, or the cloud's N/A value when `not_applicable_enabled` |
+| `tags` | `productowners`, `codeowners` | When `owner_tags_enabled`: value, or N/A as above |
+| `tags` | `projectmgmtid`, `systemid`, `componentid`, `instanceid` | Only when the identifier is set (platform-prefixed when `system_prefixes_enabled`) |
+| `tags` | `sourcerepo`, `sourcecommit` | When `source_repo_tags_enabled` and git information is available (credential-free URL) |
+| `data_tags` | `sensitivity` | Always |
+| `data_tags` | `dataregulations` | Value, or N/A when `not_applicable_enabled` |
+| `data_tags` | `dataowners` | When `owner_tags_enabled`: value, or N/A as above |
+| `data_tags` | `sovereignty` | Only when `data_sovereignty` is set |
+
+Additional tags are merged last and override generated keys. Tag keys that are invalid for the target cloud
+(for example uppercase keys on `gcp`) are rejected.
 
 ## Examples
 
@@ -170,8 +207,8 @@ provider "brockhoff" {
 data "brockhoff_context" "ephemeral" {
   namespace        = "test"
   name             = "feature-branch"
-  environment      = "ephemeral"
-  environment_type = "Ephemeral" # Auto-calculates deletion_date
+  environment      = "eph"
+  environment_type = "Ephemeral" # deletion_date defaults to today (UTC) + 90 days
 
   availability = "spot"
 }
@@ -223,6 +260,22 @@ This provider replaces the `kbrockhoff/terraform-external-context` module. Key d
 2. **Data Source**: All other configuration moved to the data source
 3. **Native Terraform**: No external script dependencies
 4. **Enhanced Performance**: Reduced external command execution
+5. **Name prefix composition**: When only one of `namespace` or `environment` is set, `name_prefix` joins the
+   parts that are present (for example `ns-app`); the module used `name` alone. This can rename resources.
+6. **No `name` inheritance**: `name` is never inherited from `parent_context`.
+7. **Tag key validation**: Tag keys that are invalid for the target cloud are rejected.
+
+### Upgrade Notes
+
+Upgrading from earlier provider releases changes these tag values once, on the first plan after upgrading, to
+match the legacy module:
+
+- `projectmgmtid`, `systemid`, `componentid` and `instanceid` are omitted when unset (previously N/A).
+- `environment` falls back to `environment`, then `dev` (previously N/A).
+- `deletiondate` is `never` for non-Ephemeral contexts without a date (previously N/A).
+- `dataowners` is omitted when `owner_tags_enabled = false` (previously N/A).
+- `tags_as_list_of_maps` and `data_tags_as_list_of_maps` entries gain `propagate_at_launch = "true"`.
+- The new optional `data_sovereignty` input adds a `sovereignty` data tag only when set.
 
 ### Migration Example
 

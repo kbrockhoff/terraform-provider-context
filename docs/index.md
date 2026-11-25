@@ -17,4 +17,4 @@ The Context provider generates standardized naming conventions and cloud-provide
 ### Optional
 
 - `cloud_provider` (String) Cloud provider identifier: dc, aws, az, gcp, oci, ibm, do, vul, ali, cv
-- `tag_prefix` (String) Prefix for all generated tags
+- `tag_prefix` (String) Prefix for all generated tag keys (default "bc-"). The prefixed keys must be valid for the target cloud.

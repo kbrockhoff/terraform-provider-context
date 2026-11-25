@@ -1,5 +1,9 @@
 # Context Terraform Provider
 
+> **Authoritative sources**: behavior is specified in `specs/001-context-provider/spec.md`
+> (FR-001 to FR-028) and governed by `.specify/memory/principles.md`. When this guide and the
+> spec disagree, the spec wins.
+
 ## Overview
 
 This Terraform provider replicates the functionality of the `kbrockhoff/terraform-external-context` module. The provider should generate the same three primary outputs: `name_prefix`, `tags`, and `data_tags` while providing a more native Terraform experience.
@@ -49,14 +53,19 @@ data "brockhoff_context" "main" {
 - `namespace` (string, optional) - Organization or business unit identifier (1-8 chars, lowercase alphanumeric with hyphens)
 - `name` (string, optional) - Unique resource name (combined name_prefix must be 2-24 chars)
 - `environment` (string, optional) - Environment abbreviation (1-8 chars, lowercase alphanumeric with hyphens)
-- `environment_name` (string, optional) - Full environment name
-- `environment_type` (string, optional) - One of: None, Ephemeral, Development, Testing, UAT, Production, MissionCritical
+- `environment_name` (string, optional) - Full environment name; the `environment` tag falls back to `environment`, then `dev`
+
+##### Environment Classification
+- `environment_type` (string, optional) - One of: None, Ephemeral, Development, Testing, UAT, Production, MissionCritical.
+  Classifies the deployment stage so consuming configurations can choose resiliency (RPO/RTO) and cost defaults.
+  Not a naming input: it never affects `name_prefix` and is not emitted as a tag. Only `Ephemeral` changes
+  outputs (deletion date). See spec FR-027 for the RPO/RTO table.
 
 ##### Resource Management
 - `enabled` (bool, optional, default: true) - Enable/disable resource creation
 - `availability` (string, optional, default: "preemptable") - Availability requirement from predefined list
 - `managedby` (string, optional, default: "terraform") - Management platform identifier
-- `deletion_date` (string, optional) - Resource deletion date (YYYY-MM-DD format)
+- `deletion_date` (string, optional) - Resource deletion date (YYYY-MM-DD format) or `never`
 
 ##### Project Management Integration
 - `pm_platform` (string, optional) - Project management platform (e.g., JIRA, SNOW)
@@ -95,7 +104,7 @@ data "brockhoff_context" "main" {
 ### Primary Outputs
 
 1. **name_prefix** (string) - Computed name prefix following Brockhoff standards:
-   - Format: `namespace-name-environment` or just `name` if namespace/environment are null
+   - Format: `namespace-name-environment`, joining only the parts that are set (e.g. `ns-app`)
    - Must match regex: `/^[a-z][a-z0-9-]{0,22}[a-z0-9]$/`
    - Maximum 24 characters with intelligent truncation
 
@@ -114,11 +123,11 @@ data "brockhoff_context" "main" {
 
 ### Additional Outputs
 
-4. **tags_as_list_of_maps** (list(object)) - Tags formatted for AWS resources
+4. **tags_as_list_of_maps** (list(object)) - Tags as `{key, value, propagate_at_launch = "true"}` maps, sorted by key
 5. **tags_as_kvp_list** (list(string)) - Tags as key=value pairs
 6. **tags_as_comma_separated_string** (string) - Tags as comma-separated string
-7. **data_tags_as_list_of_maps** (list(object)) - Data tags formatted for AWS resources
-8. **data_tags_as_kvp_list** (list(string)) - Data tags as key=value pairs  
+7. **data_tags_as_list_of_maps** (list(object)) - Data tags as `{key, value, propagate_at_launch = "true"}` maps, sorted by key
+8. **data_tags_as_kvp_list** (list(string)) - Data tags as key=value pairs
 9. **data_tags_as_comma_separated_string** (string) - Data tags as comma-separated string
 
 ## Business Logic Requirements
@@ -129,8 +138,9 @@ data "brockhoff_context" "main" {
    - Combine as: `namespace-name-environment`
    - Convert to lowercase
    
-2. **Name-Only Format**: If `namespace` or `environment` are null:
-   - Use only the `name` value
+2. **Partial Format**: If `namespace` or `environment` are null:
+   - Join the parts that are present, in namespace, name, environment order (e.g. `ns-app`)
+   - This deliberately differs from the legacy module, which used `name` alone
    
 3. **Length Validation**: Ensure final prefix matches `/^[a-z][a-z0-9-]{0,22}[a-z0-9]$/`
    - Maximum 24 characters total
@@ -147,24 +157,38 @@ Apply different tag formatting rules based on `cloud_provider`:
 
 ### Tag Processing
 
-1. **Conditional Tags**: Only include tags when:
-   - Values are non-null OR `not_applicable_enabled` is true
-   - Feature flags are enabled (e.g., `owner_tags_enabled`)
+1. **Tag Keys**: resource tags are `environment`, `availability`, `managedby`, `deletiondate`, `costcenter`,
+   `projectmgmtid`, `systemid`, `componentid`, `instanceid`, `productowners`, `codeowners`, `securityreview`,
+   `privacyreview`, `sourcerepo`, `sourcecommit`; data tags are `sensitivity`, `dataregulations`, `dataowners`,
+   `sovereignty`. All are prefixed with `tag_prefix`.
 
-2. **System Prefixes**: When `system_prefixes_enabled` is true:
+2. **Conditional Tags**:
+   - `environment`, `availability`, `managedby` and `deletiondate` are always emitted
+   - N/A substitution applies only to `costcenter`, `productowners`, `codeowners`, `securityreview`,
+     `privacyreview`, `dataregulations` and `dataowners`
+   - Owner tags, including `dataowners`, are omitted entirely when `owner_tags_enabled` is false
+   - `projectmgmtid` and the ITSM id tags are emitted only when their identifier is set (never N/A)
+   - `sovereignty` (from `data_sovereignty`) is emitted only when set (never N/A); it is free text with
+     ISO 3166-1/3166-2 codes as the recommended, unvalidated convention
+
+3. **System Prefixes**: When `system_prefixes_enabled` is true:
    - Prepend platform names to ITSM and PM codes
    - Format: `platform<delimiter>code`
 
-3. **Git Repository Integration**: When `source_repo_tags_enabled` is true:
+4. **Git Repository Integration**: When `source_repo_tags_enabled` is true:
    - Execute git commands to get repository URL and commit hash
-   - Convert SSH URLs to HTTPS format
+   - Convert SSH URLs to HTTPS format and strip any embedded credentials
    - Include `sourcerepo` and `sourcecommit` tags
+   - When git information is unavailable, skip these tags and log a warning (never fail)
+
+5. **Key Validation**: prefixed tag keys must satisfy the target cloud's key rules; invalid keys are rejected
 
 ### Ephemeral Environment Handling
 
-For `environment_type = "Ephemeral"`:
-- Auto-calculate deletion date as 90 days (2160 hours) from creation
-- Override any manually set `deletion_date`
+Deletion date resolution:
+- An explicit `deletion_date` (directly or inherited) always wins
+- Otherwise, for `environment_type = "Ephemeral"`, today (UTC) plus 90 days
+- Otherwise `never`
 
 ### Validation Requirements
 
@@ -177,7 +201,7 @@ For `environment_type = "Ephemeral"`:
 2. **Output Validation**:
    - Ensure name_prefix matches required regex pattern
    - Apply cloud provider-specific tag constraints
-   - Truncate tag values that exceed length limits
+   - Truncate tag values that exceed length limits, never splitting a multi-byte character
 
 ## Implementation Considerations
 

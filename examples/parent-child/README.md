@@ -73,6 +73,23 @@ Example:
 
 But if child sets `cost_center = "ops"`, that overrides the parent value.
 
+### What is not inherited
+
+- `name` is never inherited. Each child must set its own `name`; a child without one gets a
+  name prefix built only from the inherited namespace and environment.
+- `additional_tags` and `additional_data_tags` are merged rather than replaced: the child's keys
+  win over the parent's keys with the same name.
+
+### Resolved values in `context_output`
+
+`context_output` carries the effective values after inheritance and defaults:
+
+- `environment_name` falls back to `environment`, then `dev`, matching the `environment` tag.
+- `environment` stays exactly as supplied (it is never set to `dev`), so children don't
+  inherit a `dev` suffix in their name prefix.
+- `deletion_date` holds the resolved date: the explicit date, today plus 90 days for
+  `Ephemeral`, or `never`. Children inherit that resolved value.
+
 ## Output
 
 Each context produces:
