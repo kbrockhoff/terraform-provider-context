@@ -129,7 +129,7 @@ lint: ## Run golangci-lint (requires golangci-lint)
 		golangci-lint run; \
 		echo "✓ Linting passed"; \
 	else \
-		echo "❌ golangci-lint not found. Install it with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
+		echo "❌ golangci-lint not found. Install it with: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0"; \
 		exit 1; \
 	fi
 
@@ -145,7 +145,7 @@ docs-generate: ## Generate provider documentation
 		tfplugindocs generate --provider-name=brockhoff; \
 		echo "✓ Documentation generated"; \
 	else \
-		echo "❌ tfplugindocs not found. Install it with: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest"; \
+		echo "❌ tfplugindocs not found. Install it with: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.25.0"; \
 		exit 1; \
 	fi
 
@@ -156,7 +156,7 @@ docs-validate: ## Validate provider documentation
 		tfplugindocs validate --provider-name=brockhoff; \
 		echo "✓ Documentation validated"; \
 	else \
-		echo "❌ tfplugindocs not found. Install it with: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest"; \
+		echo "❌ tfplugindocs not found. Install it with: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.25.0"; \
 		exit 1; \
 	fi
 
@@ -168,11 +168,11 @@ dev-setup: ## Set up development environment
 	@echo "Installing development tools..."
 	@if ! command -v golangci-lint >/dev/null 2>&1; then \
 		echo "Installing golangci-lint..."; \
-		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
+		go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0; \
 	fi
 	@if ! command -v tfplugindocs >/dev/null 2>&1; then \
 		echo "Installing tfplugindocs..."; \
-		go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest; \
+		go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.25.0; \
 	fi
 	@echo "✓ Development environment ready"
 
@@ -301,8 +301,8 @@ status: ## Show development environment status
 .PHONY: install-tools
 install-tools: ## Install all development tools
 	@echo "Installing development tools..."
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
+	go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.25.0
 	@echo "✓ Development tools installed"
 
 # Phony target to ensure all targets are run regardless of file existence
